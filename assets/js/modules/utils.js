@@ -105,6 +105,15 @@ const Utils = {
     });
   },
 
+  // Open photo in fullscreen lightbox
+  openPhoto(src) {
+    const lb = document.createElement('div');
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    lb.innerHTML = `<img src="${src}" style="max-width:100%;max-height:100%;border-radius:8px;object-fit:contain;">`;
+    lb.addEventListener('click', () => lb.remove());
+    document.body.appendChild(lb);
+  },
+
   // Escape HTML to prevent XSS
   escapeHtml(str) {
     if (!str) return '';

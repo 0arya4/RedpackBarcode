@@ -306,6 +306,16 @@ function renderPostList(containerId, posts, showActions) {
   }
 }
 
+function driverColor(driverId) {
+  if (!driverId) return '';
+  let hash = 0;
+  for (let i = 0; i < driverId.length; i++) {
+    hash = driverId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 40%, 90%)`;
+}
+
 function renderPostCard(post, showActions) {
   const statusBadge = `<span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>`;
   const actions = showActions ? `
@@ -314,8 +324,9 @@ function renderPostCard(post, showActions) {
       <button class="btn btn-danger btn-sm btn-delete-post" data-id="${post.id}">🗑️ سڕینەوە</button>
     </div>` : '';
 
+  const bgColor = driverColor(post.driverId);
   return `
-    <div class="post-card status-${post.status}">
+    <div class="post-card status-${post.status}" style="background:${bgColor};">
       <div class="post-card-header">
         <span class="post-barcode">#${Utils.escapeHtml(post.barcode)}</span>
         ${statusBadge}
@@ -347,7 +358,7 @@ function renderPostCard(post, showActions) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
         </div>
       </div>
-      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
+      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="Utils.openPhoto(this.src)"></div>` : ''}
       ${actions}
     </div>`;
 }

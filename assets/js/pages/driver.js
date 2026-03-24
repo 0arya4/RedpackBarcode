@@ -336,7 +336,7 @@ function renderDriverPostCard(post, section) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(dateField)}</span>
         </div>
       </div>
-      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
+      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="Utils.openPhoto(this.src)"></div>` : ''}
       ${completeBtn}
     </div>`;
 }

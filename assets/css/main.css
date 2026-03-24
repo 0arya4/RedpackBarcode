@@ -11,15 +11,14 @@
    Until then, Noto Naskh Arabic is used automatically */
 @font-face {
   font-family: 'NRT';
-  src: local('NRT Regular'), local('NRT'),
-       local('NRT-Regular');
-  font-weight: 400;
+  src: url('../fonts/NRT-Reg.ttf') format('truetype');
+  font-weight: 400 500;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'NRT';
-  src: local('NRT Bold'), local('NRT-Bold');
+  src: url('../fonts/NRT-Bold.ttf') format('truetype');
   font-weight: 600 900;
   font-display: swap;
 }
