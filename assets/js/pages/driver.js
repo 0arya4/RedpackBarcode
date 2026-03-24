@@ -140,9 +140,9 @@ async function handleDriverScan(barcodeValue) {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
-  const input = document.getElementById('photo-input');
-  input.value = '';
-  input.click();
+  document.getElementById('photo-input').value = '';
+  const overlay = document.getElementById('photo-overlay');
+  overlay.style.display = 'flex';
 }
 
 function setupPhotoCapture() {
@@ -152,7 +152,7 @@ function setupPhotoCapture() {
     const file = input.files[0];
     if (!file || !pendingPhotoPostId) return;
 
-    Utils.closeModal('modal-photo-capture');
+    document.getElementById('photo-overlay').style.display = 'none';
     Utils.showLoading(true);
 
     const postId = pendingPhotoPostId;

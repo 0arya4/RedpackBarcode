@@ -46,7 +46,7 @@ function switchTab(tabName) {
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
   const fab = document.getElementById('admin-scan-btn');
-  if (fab) fab.style.display = (tabName === 'home' || tabName === 'posts') ? 'flex' : 'none';
+  if (fab) fab.style.display = tabName === 'home' ? 'flex' : 'none';
 
   if (tabName === 'stats') loadStats();
 }
