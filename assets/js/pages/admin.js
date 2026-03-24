@@ -137,8 +137,8 @@ function openPostForm(barcode, prefill = null, existingPost = null) {
   const isEdit = !!existingPost;
 
   document.getElementById('post-form-title').textContent = isEdit ? 'دەستکاریکردنی پۆست' : 'پۆستی نوێ';
-  document.getElementById('pf-post-id').value    = existingPost?.id || '';
-  document.getElementById('pf-barcode').value    = barcode;
+  document.getElementById('pf-post-id').value = existingPost?.id || '';
+  document.getElementById('pf-barcode').value = barcode;
   document.getElementById('pf-barcode-display').textContent = barcode;
 
   // Populate driver select
@@ -154,20 +154,20 @@ function openPostForm(barcode, prefill = null, existingPost = null) {
 
   // Fill fields
   document.getElementById('pf-receiver-phone').value = existingPost?.receiverPhone || prefill?.receiverPhone || '';
-  document.getElementById('pf-price').value          = existingPost?.price         || prefill?.price         || '';
-  document.getElementById('pf-quantity').value       = existingPost?.quantity      || prefill?.quantity      || 1;
-  document.getElementById('pf-client-name').value    = existingPost?.clientName    || prefill?.clientName    || '';
-  document.getElementById('pf-client-phone').value   = existingPost?.clientPhone   || prefill?.clientPhone   || '';
-  document.getElementById('pf-address').value        = existingPost?.address       || prefill?.address       || '';
-  document.getElementById('pf-note').value           = existingPost?.note          || prefill?.note          || '';
+  document.getElementById('pf-price').value = existingPost?.price || prefill?.price || '';
+  document.getElementById('pf-quantity').value = existingPost?.quantity || prefill?.quantity || 1;
+  document.getElementById('pf-client-name').value = existingPost?.clientName || prefill?.clientName || '';
+  document.getElementById('pf-client-phone').value = existingPost?.clientPhone || prefill?.clientPhone || '';
+  document.getElementById('pf-address').value = existingPost?.address || prefill?.address || '';
+  document.getElementById('pf-note').value = existingPost?.note || prefill?.note || '';
 
   Utils.openModal('modal-post-form');
 }
 
 async function handlePostFormSubmit(e) {
   e.preventDefault();
-  const postId   = document.getElementById('pf-post-id').value;
-  const barcode  = document.getElementById('pf-barcode').value;
+  const postId = document.getElementById('pf-post-id').value;
+  const barcode = document.getElementById('pf-barcode').value;
   const driverId = document.getElementById('pf-driver').value;
 
   if (!driverId) { Utils.showToast('سایەق هەڵبژێرە', 'error'); return; }
@@ -178,14 +178,14 @@ async function handlePostFormSubmit(e) {
   const data = {
     barcode,
     driverId,
-    driverName:    driver.name,
+    driverName: driver.name,
     receiverPhone: document.getElementById('pf-receiver-phone').value.trim(),
-    price:         Number(document.getElementById('pf-price').value),
-    quantity:      Number(document.getElementById('pf-quantity').value) || 1,
-    clientName:    document.getElementById('pf-client-name').value.trim(),
-    clientPhone:   document.getElementById('pf-client-phone').value.trim(),
-    address:       document.getElementById('pf-address').value.trim(),
-    note:          document.getElementById('pf-note').value.trim(),
+    price: Number(document.getElementById('pf-price').value),
+    quantity: Number(document.getElementById('pf-quantity').value) || 1,
+    clientName: document.getElementById('pf-client-name').value.trim(),
+    clientPhone: document.getElementById('pf-client-phone').value.trim(),
+    address: document.getElementById('pf-address').value.trim(),
+    note: document.getElementById('pf-note').value.trim(),
   };
 
   Utils.showLoading(true);
@@ -205,14 +205,14 @@ async function handlePostFormSubmit(e) {
       // Create new post
       const newRef = await db.collection('posts').add({
         ...data,
-        status:          'ready',
-        adminScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'ready',
+        adminScannedAt: firebase.firestore.FieldValue.serverTimestamp(),
         driverScannedAt: null,
-        completedAt:     null,
-        createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
-        createdBy:       currentAdminUser.uid
+        completedAt: null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: currentAdminUser.uid
       });
-      Utils.showToast('پۆست پاشەکەوتکرا ✓', 'success');
+      Utils.showToast('پۆست چاککرا ✓', 'success');
       Utils.closeModal('modal-post-form');
       openPhotoCaptureModal(newRef.id);
     }
@@ -247,14 +247,14 @@ function updateCountsAndBadges(posts) {
   const counts = { ready: 0, with_driver: 0, completed: 0 };
   posts.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; });
 
-  document.getElementById('stat-ready').textContent       = counts.ready;
+  document.getElementById('stat-ready').textContent = counts.ready;
   document.getElementById('stat-with-driver').textContent = counts.with_driver;
-  document.getElementById('stat-completed').textContent   = counts.completed;
-  document.getElementById('stat-total').textContent       = posts.length;
+  document.getElementById('stat-completed').textContent = counts.completed;
+  document.getElementById('stat-total').textContent = posts.length;
 
-  document.getElementById('count-ready').textContent       = counts.ready;
+  document.getElementById('count-ready').textContent = counts.ready;
   document.getElementById('count-with_driver').textContent = counts.with_driver;
-  document.getElementById('count-completed').textContent   = counts.completed;
+  document.getElementById('count-completed').textContent = counts.completed;
 
   const deleteAllBtn = document.getElementById('delete-all-completed-btn');
   if (deleteAllBtn) deleteAllBtn.style.display = counts.completed > 0 ? 'block' : 'none';
@@ -352,7 +352,7 @@ function renderPostCard(post, showActions) {
             <span class="value">${Utils.escapeHtml(post.driverName)}</span>
           </div>
           <div class="post-row">
-            <span class="label">کڵێنت:</span>
+            <span class="label">کڵاینت:</span>
             <span class="value">${Utils.escapeHtml(post.clientName)}${post.clientPhone ? ' — ' + Utils.escapeHtml(post.clientPhone) : ''}</span>
           </div>
           <div class="post-row">
@@ -369,12 +369,12 @@ function renderPostCard(post, showActions) {
           </div>
           ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
           <div class="post-row">
-            <span class="label">باڕکۆد ئۆفیس:</span>
+            <span class="label"> کاتی باڕکۆدی ئۆفیس:</span>
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
           </div>
           ${post.driverScannedAt ? `
           <div class="post-row">
-            <span class="label">باڕکۆد سایەق:</span>
+            <span class="label"> کاتی باڕکۆدی سایەق:</span>
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
           </div>` : ''}
         </div>
@@ -398,7 +398,7 @@ async function deleteAllCompleted() {
   const posts = allPostsCache.filter(p => p.status === 'completed');
   if (!posts.length) return;
 
-  const confirmed = await Utils.confirm(`دڵنیایت لە سڕینەوەی هەموو ${posts.length} پۆستی تەواوبووەکان؟`);
+  const confirmed = await Utils.confirm(`دڵنیایت لە سڕینەوەی هەموو ${posts.length} پۆستە تەواوبووەکان؟`);
   if (!confirmed) return;
 
   Utils.showLoading(true);
@@ -496,7 +496,7 @@ function openDriverForm(uid = null) {
   document.getElementById('df-driver-uid').value = uid || '';
 
   const driver = allDrivers.find(d => d.uid === uid);
-  document.getElementById('df-name').value  = driver?.name  || '';
+  document.getElementById('df-name').value = driver?.name || '';
   document.getElementById('df-email').value = driver?.email || '';
   document.getElementById('df-password').value = '';
 
@@ -538,12 +538,12 @@ function openDriverForm(uid = null) {
 
 async function handleDriverFormSubmit(e) {
   e.preventDefault();
-  const uid      = document.getElementById('df-driver-uid').value;
-  const name     = document.getElementById('df-name').value.trim();
-  const email    = document.getElementById('df-email').value.trim();
+  const uid = document.getElementById('df-driver-uid').value;
+  const name = document.getElementById('df-name').value.trim();
+  const email = document.getElementById('df-email').value.trim();
   const password = document.getElementById('df-password').value;
-  const isEdit   = !!uid;
-  const btn      = document.getElementById('df-submit-btn');
+  const isEdit = !!uid;
+  const btn = document.getElementById('df-submit-btn');
 
   // Read supervisor data
   const isSupervisor = document.getElementById('df-is-supervisor').checked;
@@ -577,14 +577,14 @@ async function handleDriverFormSubmit(e) {
 }
 
 async function toggleDriver(uid, isActive) {
-  const action  = isActive ? 'ناچالاককردن' : 'چالاككردن';
+  const action = isActive ? 'ناچالاককردن' : 'چالاككردن';
   const confirmed = await Utils.confirm(`دڵنیایت لە ${action}ی ئەم سایەقە؟`);
   if (!confirmed) return;
 
   Utils.showLoading(true);
   try {
     if (isActive) await Auth.deactivateDriver(uid);
-    else          await Auth.reactivateDriver(uid);
+    else await Auth.reactivateDriver(uid);
     await loadDrivers();
     Utils.showToast('نوێکرایەوە ✓', 'success');
   } catch (err) {
@@ -596,9 +596,9 @@ async function toggleDriver(uid, isActive) {
 // ── Stats ────────────────────────────────────────────────────
 async function loadStats() {
   const snapshot = await db.collection('posts').get();
-  const posts    = snapshot.docs.map(d => d.data());
+  const posts = snapshot.docs.map(d => d.data());
 
-  const counts   = { ready: 0, with_driver: 0, completed: 0 };
+  const counts = { ready: 0, with_driver: 0, completed: 0 };
   const byDriver = {};
 
   posts.forEach(p => {
@@ -655,7 +655,7 @@ function setupPhotoCapture() {
     try {
       const base64 = await compressToBase64(file);
       await db.collection('posts').doc(postId).update({ photoAdmin: base64 });
-      Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
+      Utils.showToast('وێنە دانرا ✓', 'success');
     } catch (err) {
       Utils.showToast('هەڵە: ' + err.message, 'error');
     } finally {
@@ -673,9 +673,9 @@ function compressToBase64(file, maxWidth = 600, quality = 0.5) {
       const img = new Image();
       img.onerror = () => reject(new Error('Failed to load image'));
       img.onload = () => {
-        const ratio  = Math.min(maxWidth / img.width, 1);
+        const ratio = Math.min(maxWidth / img.width, 1);
         const canvas = document.createElement('canvas');
-        canvas.width  = Math.round(img.width  * ratio);
+        canvas.width = Math.round(img.width * ratio);
         canvas.height = Math.round(img.height * ratio);
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', quality));

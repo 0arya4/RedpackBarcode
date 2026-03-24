@@ -105,8 +105,8 @@ function renderAllFromCache() {
     : posts;
 
   renderDriverList('list-uncollected', filterPosts(driverPostsCache.uncollected), 'uncollected');
-  renderDriverList('list-withme',      filterPosts(driverPostsCache.withme),      'withme');
-  renderDriverList('list-completed',   filterPosts(driverPostsCache.completed),   'completed');
+  renderDriverList('list-withme', filterPosts(driverPostsCache.withme), 'withme');
+  renderDriverList('list-completed', filterPosts(driverPostsCache.completed), 'completed');
 }
 
 // ── Barcode Scanner ──────────────────────────────────────────
@@ -169,7 +169,7 @@ async function handleDriverScan(barcodeValue) {
 
     const postId = matchDoc.id;
     await matchDoc.ref.update({
-      status:          'with_driver',
+      status: 'with_driver',
       driverScannedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -229,9 +229,9 @@ function compressToBase64(file, maxWidth = 600, quality = 0.5) {
       const img = new Image();
       img.onerror = () => reject(new Error('Failed to load image'));
       img.onload = () => {
-        const ratio  = Math.min(maxWidth / img.width, 1);
+        const ratio = Math.min(maxWidth / img.width, 1);
         const canvas = document.createElement('canvas');
-        canvas.width  = Math.round(img.width  * ratio);
+        canvas.width = Math.round(img.width * ratio);
         canvas.height = Math.round(img.height * ratio);
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', quality));
@@ -247,18 +247,18 @@ async function completeAllPosts() {
   const posts = driverPostsCache.withme;
   if (!posts.length) return;
 
-  const confirmed = await Utils.confirm(`دڵنیایت لە تەواوکردنی هەموو ${posts.length} پۆستەکە؟`);
+  const confirmed = await Utils.confirm(`دڵنیایت لە تەواوکردنی هەموو ${posts.length} پۆستەکان؟`);
   if (!confirmed) return;
 
   Utils.showLoading(true);
   try {
     const batch = db.batch();
-    const now   = firebase.firestore.FieldValue.serverTimestamp();
+    const now = firebase.firestore.FieldValue.serverTimestamp();
     posts.forEach(p => {
       batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
     });
     await batch.commit();
-    Utils.showToast(`${posts.length} پۆست تەواوبوون ✓`, 'success');
+    Utils.showToast(`${posts.length} پۆستەکان تەواوبوون ✓`, 'success');
   } catch (err) {
     Utils.showToast('هەڵەیەک ڕوویدا', 'error');
   }
@@ -273,7 +273,7 @@ async function completePost(postId) {
   Utils.showLoading(true);
   try {
     await db.collection('posts').doc(postId).update({
-      status:      'completed',
+      status: 'completed',
       completedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     Utils.showToast('پۆست تەواوبوو ✓', 'success');
@@ -312,8 +312,8 @@ function startRealtimeListeners() {
       .sort((a, b) => (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0));
 
     driverPostsCache.uncollected = uncollected;
-    driverPostsCache.withme      = withMe;
-    driverPostsCache.completed   = completed;
+    driverPostsCache.withme = withMe;
+    driverPostsCache.completed = completed;
 
     // Badges always reflect total counts (unfiltered)
     updateBadge('badge-uncollected', uncollected.length);
@@ -327,8 +327,8 @@ function startRealtimeListeners() {
       : posts;
 
     renderDriverList('list-uncollected', applyFilter(uncollected), 'uncollected');
-    renderDriverList('list-withme',      applyFilter(withMe),      'withme');
-    renderDriverList('list-completed',   applyFilter(completed),   'completed');
+    renderDriverList('list-withme', applyFilter(withMe), 'withme');
+    renderDriverList('list-completed', applyFilter(completed), 'completed');
   });
 }
 
@@ -351,8 +351,8 @@ function renderDriverList(containerId, posts, section) {
   if (posts.length === 0) {
     const emptyMessages = {
       uncollected: { icon: '📥', title: 'هیچ پۆستێک نییە', text: 'هەموو پۆستەکانت وەرگیراون' },
-      withme:      { icon: '🚗', title: 'هیچ پۆستێک لات نییە', text: 'باڕکۆدی پۆستەکان بکە' },
-      completed:   { icon: '✅', title: 'هیچ پۆستی تەواوبووێک نییە', text: '' }
+      withme: { icon: '🚗', title: 'هیچ پۆستێک لات نییە', text: 'باڕکۆدی پۆستەکان بکە' },
+      completed: { icon: '✅', title: 'هیچ پۆستی تەواوبووێک نییە', text: '' }
     };
     const msg = emptyMessages[section] || emptyMessages.uncollected;
     el.innerHTML = `
@@ -399,7 +399,7 @@ function renderDriverPostCard(post, section) {
       <div class="post-card-details">
         <div class="post-card-body">
           <div class="post-row">
-            <span class="label">کڵێنت:</span>
+            <span class="label">کڵاینت:</span>
             <span class="value">${Utils.escapeHtml(post.clientName)}</span>
           </div>
           <div class="post-row">
@@ -425,8 +425,8 @@ function renderDriverPostCard(post, section) {
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
           </div>` : ''}
         </div>
-        ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی پاکەت</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
-        ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 وێنەی گەیاندن</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی بەریدەکە</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 وێنەی لای سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${completeBtn}
       </div>
     </div>`;
