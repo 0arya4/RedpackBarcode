@@ -553,45 +553,28 @@ async function loadStats() {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
-  document.getElementById('photo-preview-wrap').style.display = 'none';
-  document.getElementById('photo-take-btn').style.display = 'block';
-  document.getElementById('photo-take-btn').textContent = '📷 وێنە بگرە';
-  document.getElementById('photo-confirm-btn').style.display = 'none';
   document.getElementById('photo-input').value = '';
   Utils.openModal('modal-photo-capture');
 }
 
 function setupPhotoCapture() {
-  const input       = document.getElementById('photo-input');
-  const preview     = document.getElementById('photo-preview');
-  const previewWrap = document.getElementById('photo-preview-wrap');
-  const takeBtn     = document.getElementById('photo-take-btn');
-  const confirmBtn  = document.getElementById('photo-confirm-btn');
-  const skipBtn     = document.getElementById('photo-skip-btn');
+  const input   = document.getElementById('photo-input');
+  const takeBtn = document.getElementById('photo-take-btn');
+  const skipBtn = document.getElementById('photo-skip-btn');
 
   takeBtn.addEventListener('click', () => input.click());
 
-  input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (!file) return;
-    preview.src = URL.createObjectURL(file);
-    previewWrap.style.display = 'block';
-    takeBtn.textContent = '🔄 دووبارە بگرە';
-    confirmBtn.style.display = 'block';
-  });
-
-  confirmBtn.addEventListener('click', async () => {
+  input.addEventListener('change', async () => {
     const file = input.files[0];
     if (!file || !pendingPhotoPostId) return;
 
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = 'چاوەڕێبە...';
+    Utils.closeModal('modal-photo-capture');
     Utils.showLoading(true);
 
     try {
-      const compressed = await compressImage(file);
-      const ref = storage.ref(`posts/${pendingPhotoPostId}/photo.jpg`);
-      await ref.put(compressed);
+      const blob = await compressImage(file);
+      const ref  = storage.ref(`posts/${pendingPhotoPostId}/photo.jpg`);
+      await ref.put(blob);
       const url = await ref.getDownloadURL();
       await db.collection('posts').doc(pendingPhotoPostId).update({ photoUrl: url });
       Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
@@ -599,9 +582,6 @@ function setupPhotoCapture() {
       Utils.showToast('هەڵە لە پاشەکەوتکردنی وێنە: ' + err.message, 'error');
     } finally {
       Utils.showLoading(false);
-      Utils.closeModal('modal-photo-capture');
-      confirmBtn.disabled = false;
-      confirmBtn.textContent = '✅ پاشەکەوتکردن';
       pendingPhotoPostId = null;
     }
   });
@@ -615,15 +595,21 @@ function setupPhotoCapture() {
 function compressImage(file, maxWidth = 1200, quality = 0.75) {
   return new Promise((resolve) => {
     const reader = new FileReader();
+    reader.onerror = () => resolve(file);
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => resolve(file);
       img.onload = () => {
-        const ratio = Math.min(maxWidth / img.width, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width  = img.width  * ratio;
-        canvas.height = img.height * ratio;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(resolve, 'image/jpeg', quality);
+        try {
+          const ratio  = Math.min(maxWidth / img.width, 1);
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality);
+        } catch (_) {
+          resolve(file);
+        }
       };
       img.src = e.target.result;
     };
