@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#C62828" />
+  <title>Red Pack — چوونەژوورەوە</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="stylesheet" href="assets/css/auth.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="auth-logo-box">RP</div>
+      <h1>RED PACK</h1>
+      <p>بۆ گەیاندنی خێرا</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="auth-card">
+      <h2>چوونەژوورەوە</h2>
+
+      <div class="auth-error" id="auth-error"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="email">ئیمەیڵ</label>
+          <input
+            class="form-input"
+            type="email"
+            id="email"
+            placeholder="name@example.com"
+            autocomplete="email"
+            required
+            dir="ltr"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">پاسوۆرد</label>
+          <input
+            class="form-input"
+            type="password"
+            id="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+            dir="ltr"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
+          چوونەژوورەوە
+        </button>
+      </form>
+    </div>
+
+    <div class="auth-footer">Red Pack Company © 2026</div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>چاوەڕێبە...</p>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="assets/js/config/firebase.js"></script>
+  <script src="assets/js/modules/utils.js"></script>
+  <script src="assets/js/modules/auth.js"></script>
+
+  <script>
+    // Redirect if already logged in
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userData = await Auth.getUserData(user.uid);
+        if (userData?.role === 'admin')  return window.location.href = '/admin.html';
+        if (userData?.role === 'driver') return window.location.href = '/driver.html';
+      }
+    });
+
+    // Login form submit
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl  = document.getElementById('auth-error');
+      const btn      = document.getElementById('login-btn');
+
+      errorEl.classList.remove('show');
+      btn.disabled = true;
+      btn.textContent = 'چاوەڕێبە...';
+      Utils.showLoading(true);
+
+      try {
+        const { userData } = await Auth.login(email, password);
+        if (userData.role === 'admin')  window.location.href = '/admin.html';
+        else if (userData.role === 'driver') window.location.href = '/driver.html';
+        else throw new Error('ڕۆڵی ئەم ئەکاونتە دیاری نییە.');
+      } catch (err) {
+        Utils.showLoading(false);
+        btn.disabled = false;
+        btn.textContent = 'چوونەژوورەوە';
+        let msg = 'هەڵەیەک ڕوویدا. دووبارە هەوڵبدەرەوە.';
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+          msg = 'ئیمەیڵ یان پاسوۆرد هەڵەیە.';
+        } else if (err.code === 'auth/too-many-requests') {
+          msg = 'زۆر جار هەوڵت دا. کەمێک چاوەڕێ بکەرەوە.';
+        } else if (err.message) {
+          msg = err.message;
+        }
+        errorEl.textContent = msg;
+        errorEl.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>
