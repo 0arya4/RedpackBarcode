@@ -80,6 +80,28 @@ async function addTestPost() {
       driverName = driverSnap.docs[0].data().name;
     }
 
+    // Generate a test photo (simulates admin taking a photo)
+    const canvas = document.createElement('canvas');
+    canvas.width = 400; canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFF3E0';
+    ctx.fillRect(0, 0, 400, 300);
+    ctx.fillStyle = '#C62828';
+    ctx.fillRect(0, 0, 400, 50);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('RED PACK — TEST PHOTO', 200, 33);
+    ctx.fillStyle = '#333';
+    ctx.font = '18px sans-serif';
+    ctx.fillText('باڕکۆد: 174437', 200, 110);
+    ctx.fillText('VR game center', 200, 145);
+    ctx.fillText('بازیان — دەرەوەی سلێمانی', 200, 180);
+    ctx.fillStyle = '#999';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('📷 وێنەی تێست — ئەدمین', 200, 270);
+    const testPhoto = canvas.toDataURL('image/jpeg', 0.8);
+
     // Add the test post
     await db.collection('posts').add({
       barcode:         '174437',
@@ -93,6 +115,7 @@ async function addTestPost() {
       address:         'دەرەوەی سلێمانی - بازیان',
       note:            'n/a',
       status:          'ready',
+      photoAdmin:      testPhoto,
       adminScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
       driverScannedAt: null,
       completedAt:     null,

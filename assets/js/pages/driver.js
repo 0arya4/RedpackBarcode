@@ -163,7 +163,7 @@ function setupPhotoCapture() {
 
     try {
       const base64 = await compressToBase64(file);
-      await db.collection('posts').doc(postId).update({ photo: base64 });
+      await db.collection('posts').doc(postId).update({ photoDriver: base64 });
       Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
     } catch (err) {
       Utils.showToast('هەڵە: ' + err.message, 'error');
@@ -336,7 +336,8 @@ function renderDriverPostCard(post, section) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(dateField)}</span>
         </div>
       </div>
-      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="Utils.openPhoto(this.src)"></div>` : ''}
+      ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی پاکەت</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="Utils.openPhoto(this.src)"></div>` : ''}
+      ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 وێنەی گەیاندن</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="Utils.openPhoto(this.src)"></div>` : ''}
       ${completeBtn}
     </div>`;
 }
