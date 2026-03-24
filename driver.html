@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ckb" dir="rtl">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
@@ -9,147 +10,154 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
+
 <body>
-<div class="page-wrapper">
+  <div class="page-wrapper">
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="logo">
-      <div class="logo-icon">RP</div>
-      RED PACK
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span class="user-info" id="driver-name">سایەق</span>
-      <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="font-size:1.1rem;padding:5px 8px;">🌙</button>
-      <button class="btn-logout" onclick="Auth.logout()">چوونەدەرەوە</button>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="content-area">
-
-    <!-- Supervisor driver filter — only shown when supervisor mode -->
-    <div id="supervisor-filter-bar" style="display:none;padding:8px 16px 0;">
-      <select class="form-select" id="supervisor-driver-filter" style="width:100%;">
-        <option value="">هەموو سایەقەکان</option>
-      </select>
-    </div>
-
-    <!-- ══════════════ TAB: UNCOLLECTED ══════════════ -->
-    <div id="tab-uncollected" class="tab-content active">
-      <div class="filter-bar">
-        <input class="form-input" type="text" id="search-uncollected"
-          placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr" style="margin:0;" />
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <div class="logo-icon">RP</div>
+        RED PACK
       </div>
-      <div id="list-uncollected"></div>
-    </div>
-
-    <!-- ══════════════ TAB: WITH ME ══════════════════ -->
-    <div id="tab-withme" class="tab-content">
-      <div class="filter-bar">
-        <input class="form-input" type="text" id="search-withme"
-          placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr" style="margin:0;" />
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="user-info" id="driver-name">سایەق</span>
+        <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()"
+          style="font-size:1.1rem;padding:5px 8px;">🌙</button>
+        <button class="btn-logout" onclick="Auth.logout()">چوونەدەرەوە</button>
       </div>
-      <div style="padding: 8px 16px 0;">
-        <button class="btn btn-success btn-full" id="complete-all-btn" style="display:none;" onclick="completeAllPosts()">
-          ✅ تەواوبوون لە هەمووی
-        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content-area">
+
+      <!-- Supervisor driver filter — only shown when supervisor mode -->
+      <div id="supervisor-filter-bar" style="display:none;padding:8px 16px 0;">
+        <select class="form-select" id="supervisor-driver-filter" style="width:100%;">
+          <option value="">هەموو سایەقەکان</option>
+        </select>
       </div>
-      <div id="list-withme"></div>
-    </div>
 
-    <!-- ══════════════ TAB: COMPLETED ════════════════ -->
-    <div id="tab-completed" class="tab-content">
-      <div class="filter-bar">
-        <input class="form-input" type="text" id="search-completed"
-          placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr" style="margin:0;" />
+      <!-- ══════════════ TAB: UNCOLLECTED ══════════════ -->
+      <div id="tab-uncollected" class="tab-content active">
+        <div class="filter-bar">
+          <input class="form-input" type="text" id="search-uncollected" placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr"
+            style="margin:0;" />
+        </div>
+        <div id="list-uncollected"></div>
       </div>
-      <div id="list-completed"></div>
-    </div>
 
-  </main>
+      <!-- ══════════════ TAB: WITH ME ══════════════════ -->
+      <div id="tab-withme" class="tab-content">
+        <div class="filter-bar">
+          <input class="form-input" type="text" id="search-withme" placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr"
+            style="margin:0;" />
+        </div>
+        <div style="padding: 8px 16px 0;">
+          <button class="btn btn-success btn-full" id="complete-all-btn" style="display:none;"
+            onclick="completeAllPosts()">
+            ✅ تەواوبوون لە هەمووی
+          </button>
+        </div>
+        <div id="list-withme"></div>
+      </div>
 
-  <!-- Floating Scan Button (hidden on completed tab) -->
-  <button class="fab" id="driver-scan-fab">
-    📷&nbsp;&nbsp;باڕکۆد بکە
-  </button>
+      <!-- ══════════════ TAB: COMPLETED ════════════════ -->
+      <div id="tab-completed" class="tab-content">
+        <div class="filter-bar">
+          <input class="form-input" type="text" id="search-completed" placeholder="🔍 گەڕان بە باڕکۆد..." dir="ltr"
+            style="margin:0;" />
+        </div>
+        <div id="list-completed"></div>
+      </div>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="uncollected">
-      <span class="nav-icon">📥</span>
-      <span class="nav-label">هەڵنەگیراو</span>
-      <span class="nav-badge" id="badge-uncollected" style="display:none;"></span>
+    </main>
+
+    <!-- Floating Scan Button (hidden on completed tab) -->
+    <button class="fab" id="driver-scan-fab">
+      📷&nbsp;&nbsp;باڕکۆد بکە
     </button>
-    <button class="nav-item" data-tab="withme">
-      <span class="nav-icon">🚗</span>
-      <span class="nav-label">لای من</span>
-      <span class="nav-badge" id="badge-withme" style="display:none;"></span>
-    </button>
-    <button class="nav-item" data-tab="completed">
-      <span class="nav-icon">✅</span>
-      <span class="nav-label">تەواوبوو</span>
-    </button>
-  </nav>
 
-</div><!-- /page-wrapper -->
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="uncollected">
+        <span class="nav-icon">📥</span>
+        <span class="nav-label">هەڵنەگیراو</span>
+        <span class="nav-badge" id="badge-uncollected" style="display:none;"></span>
+      </button>
+      <button class="nav-item" data-tab="withme">
+        <span class="nav-icon">🚗</span>
+        <span class="nav-label">لای من</span>
+        <span class="nav-badge" id="badge-withme" style="display:none;"></span>
+      </button>
+      <button class="nav-item" data-tab="completed">
+        <span class="nav-icon">✅</span>
+        <span class="nav-label">تەواوبوو</span>
+      </button>
+    </nav>
 
-<!-- ══════════════════════════ MODAL: BARCODE SCANNER ══════════════════════════ -->
-<div class="modal" id="modal-driver-scanner">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">📷 باڕکۆدکردن</span>
-      <button class="modal-close" id="driver-scanner-close">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">
-        باڕکۆدی ستیکەر ئامانج بگرە بۆ وەرگرتنی پۆست
-      </p>
-      <div class="scanner-container">
-        <div id="driver-scanner-view"></div>
+  </div><!-- /page-wrapper -->
+
+  <!-- ══════════════════════════ MODAL: BARCODE SCANNER ══════════════════════════ -->
+  <div class="modal" id="modal-driver-scanner">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <span class="modal-title">📷 باڕکۆدکردن</span>
+        <button class="modal-close" id="driver-scanner-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">
+          باڕکۆدی ستیکەر بکە بۆ وەرگرتنی پۆست
+        </p>
+        <div class="scanner-container">
+          <div id="driver-scanner-view"></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Photo Capture Overlay — appears instantly after scan -->
-<div id="photo-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:24px;">
-  <div style="color:#fff; font-size:1.1rem; font-weight:700; text-align:center;">📦 پۆست هەڵگیرا<br><span style="font-size:0.85rem; font-weight:400; opacity:0.7;">وێنەی پاکەتەکە بگرە</span></div>
-  <label for="photo-input" style="background:var(--primary); color:#fff; padding:20px 48px; border-radius:16px; font-size:1.2rem; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(198,40,40,0.5);">
-    📷 وێنە بگرە
-  </label>
-  <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
-</div>
+  <!-- Photo Capture Overlay — appears instantly after scan -->
+  <div id="photo-overlay"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:24px;">
+    <div style="color:#fff; font-size:1.1rem; font-weight:700; text-align:center;">📦 پۆست هەڵگیرا<br><span
+        style="font-size:0.85rem; font-weight:400; opacity:0.7;">وێنەی پاکەتەکە بگرە</span></div>
+    <label for="photo-input"
+      style="background:var(--primary); color:#fff; padding:20px 48px; border-radius:16px; font-size:1.2rem; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(198,40,40,0.5);">
+      📷 وێنە بگرە
+    </label>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
+  </div>
 
-<!-- Loading Overlay -->
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <p>چاوەڕێبە...</p>
-</div>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>چاوەڕێبە...</p>
+  </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-<!-- App Scripts -->
-<script src="assets/js/config/firebase.js"></script>
-<script src="assets/js/modules/utils.js"></script>
-<script src="assets/js/modules/auth.js"></script>
-<script src="assets/js/modules/barcode.js"></script>
-<script src="assets/js/pages/driver.js"></script>
-<script>
-  function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
-  }
-  Utils.initTheme();
-</script>
+  <!-- App Scripts -->
+  <script src="assets/js/config/firebase.js"></script>
+  <script src="assets/js/modules/utils.js"></script>
+  <script src="assets/js/modules/auth.js"></script>
+  <script src="assets/js/modules/barcode.js"></script>
+  <script src="assets/js/pages/driver.js"></script>
+  <script>
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+    Utils.initTheme();
+  </script>
 
 </body>
+
 </html>
