@@ -303,10 +303,6 @@ function renderDriverPostCard(post, section) {
       </button>
     </div>` : '';
 
-  const dateField = section === 'uncollected' ? post.adminScannedAt
-    : section === 'withme'   ? post.driverScannedAt
-    : post.completedAt;
-
   return `
     <div class="post-card status-${post.status}">
       <div class="post-card-header">
@@ -332,9 +328,14 @@ function renderDriverPostCard(post, section) {
         </div>
         ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
         <div class="post-row">
-          <span class="label">بەروار:</span>
-          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(dateField)}</span>
+          <span class="label">باڕکۆد ئۆفیس:</span>
+          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
         </div>
+        ${post.driverScannedAt ? `
+        <div class="post-row">
+          <span class="label">باڕکۆد سایەق:</span>
+          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
+        </div>` : ''}
       </div>
       ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی پاکەت</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="Utils.openPhoto(this.src)"></div>` : ''}
       ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 وێنەی گەیاندن</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="Utils.openPhoto(this.src)"></div>` : ''}

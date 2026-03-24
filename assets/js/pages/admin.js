@@ -354,9 +354,14 @@ function renderPostCard(post, showActions) {
         </div>
         ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
         <div class="post-row">
-          <span class="label">بەروار:</span>
+          <span class="label">باڕکۆد ئۆفیس:</span>
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
         </div>
+        ${post.driverScannedAt ? `
+        <div class="post-row">
+          <span class="label">باڕکۆد سایەق:</span>
+          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
+        </div>` : ''}
       </div>
       ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="Utils.openPhoto(this.src)"></div>` : ''}
       ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="Utils.openPhoto(this.src)"></div>` : ''}
