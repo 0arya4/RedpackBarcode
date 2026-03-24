@@ -320,52 +320,58 @@ function renderPostCard(post, showActions) {
   const statusBadge = `<span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>`;
   const actions = showActions ? `
     <div class="post-card-footer">
-      <button class="btn btn-outline btn-sm btn-edit-post" data-id="${post.id}">✏️ دەستکاری</button>
-      <button class="btn btn-danger btn-sm btn-delete-post" data-id="${post.id}">🗑️ سڕینەوە</button>
+      <button class="btn btn-outline btn-sm btn-edit-post" data-id="${post.id}" onclick="event.stopPropagation()">✏️ دەستکاری</button>
+      <button class="btn btn-danger btn-sm btn-delete-post" data-id="${post.id}" onclick="event.stopPropagation()">🗑️ سڕینەوە</button>
     </div>` : '';
 
   const bgColor = driverColor(post.driverId);
   return `
-    <div class="post-card status-${post.status}" style="background:${bgColor};">
-      <div class="post-card-header">
-        <span class="post-barcode">#${Utils.escapeHtml(post.barcode)}</span>
+    <div class="post-card status-${post.status}" style="background:${bgColor};" onclick="this.classList.toggle('expanded')">
+      <div class="post-card-summary">
+        <div class="post-summary-main">
+          <div class="post-summary-barcode">#${Utils.escapeHtml(post.barcode)}</div>
+          <div class="post-summary-sub">${Utils.escapeHtml(post.driverName)} · ${Utils.escapeHtml(post.clientName)}</div>
+        </div>
         ${statusBadge}
+        <span class="post-chevron">▼</span>
       </div>
-      <div class="post-card-body">
-        <div class="post-row">
-          <span class="label">سایەق:</span>
-          <span class="value">${Utils.escapeHtml(post.driverName)}</span>
+      <div class="post-card-details">
+        <div class="post-card-body">
+          <div class="post-row">
+            <span class="label">سایەق:</span>
+            <span class="value">${Utils.escapeHtml(post.driverName)}</span>
+          </div>
+          <div class="post-row">
+            <span class="label">کڵێنت:</span>
+            <span class="value">${Utils.escapeHtml(post.clientName)}${post.clientPhone ? ' — ' + Utils.escapeHtml(post.clientPhone) : ''}</span>
+          </div>
+          <div class="post-row">
+            <span class="label">ناونیشان:</span>
+            <span class="value">${Utils.escapeHtml(post.address)}</span>
+          </div>
+          <div class="post-row">
+            <span class="label">وەرگر:</span>
+            <span class="value">${Utils.escapeHtml(post.receiverPhone)}</span>
+          </div>
+          <div class="post-row">
+            <span class="label">نرخ:</span>
+            <span class="value">${Utils.formatPrice(post.price, post.quantity)}</span>
+          </div>
+          ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
+          <div class="post-row">
+            <span class="label">باڕکۆد ئۆفیس:</span>
+            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
+          </div>
+          ${post.driverScannedAt ? `
+          <div class="post-row">
+            <span class="label">باڕکۆد سایەق:</span>
+            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
+          </div>` : ''}
         </div>
-        <div class="post-row">
-          <span class="label">کڵێنت:</span>
-          <span class="value">${Utils.escapeHtml(post.clientName)}${post.clientPhone ? ' — ' + Utils.escapeHtml(post.clientPhone) : ''}</span>
-        </div>
-        <div class="post-row">
-          <span class="label">ناونیشان:</span>
-          <span class="value">${Utils.escapeHtml(post.address)}</span>
-        </div>
-        <div class="post-row">
-          <span class="label">وەرگر:</span>
-          <span class="value">${Utils.escapeHtml(post.receiverPhone)}</span>
-        </div>
-        <div class="post-row">
-          <span class="label">نرخ:</span>
-          <span class="value">${Utils.formatPrice(post.price, post.quantity)}</span>
-        </div>
-        ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
-        <div class="post-row">
-          <span class="label">باڕکۆد ئۆفیس:</span>
-          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
-        </div>
-        ${post.driverScannedAt ? `
-        <div class="post-row">
-          <span class="label">باڕکۆد سایەق:</span>
-          <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
-        </div>` : ''}
+        ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${actions}
       </div>
-      ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="Utils.openPhoto(this.src)"></div>` : ''}
-      ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="Utils.openPhoto(this.src)"></div>` : ''}
-      ${actions}
     </div>`;
 }
 

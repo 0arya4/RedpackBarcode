@@ -255,11 +255,63 @@ p  { font-size: 0.95rem; line-height: 1.6; }
   margin: 8px 16px;
   overflow: hidden;
   border-right: 4px solid var(--primary);
+  cursor: pointer;
+  transition: box-shadow var(--transition);
 }
+.post-card:active { box-shadow: var(--shadow-md); }
 
 .post-card.status-ready       { border-right-color: var(--warning); }
 .post-card.status-with_driver { border-right-color: var(--info); }
 .post-card.status-completed   { border-right-color: var(--success); }
+
+/* Collapsed summary row */
+.post-card-summary {
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.post-summary-main {
+  flex: 1;
+  min-width: 0;
+}
+.post-summary-barcode {
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: monospace;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+.post-summary-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.post-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+.post-card.expanded .post-chevron {
+  transform: rotate(180deg);
+}
+
+/* Expandable details */
+.post-card-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+  border-top: 0px solid var(--border);
+}
+.post-card.expanded .post-card-details {
+  max-height: 1200px;
+  border-top: 1px solid var(--border);
+}
 
 .post-card-header {
   padding: 10px 14px;
@@ -295,7 +347,7 @@ p  { font-size: 0.95rem; line-height: 1.6; }
 .post-row .label {
   color: var(--text-muted);
   font-size: 0.78rem;
-  min-width: 70px;
+  min-width: 80px;
   flex-shrink: 0;
   padding-top: 1px;
 }
