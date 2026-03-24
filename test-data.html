@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Data — Red Pack</title>
+  <style>
+    * { box-sizing: border-box; font-family: sans-serif; }
+    body { background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .card { background: white; border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    h2 { color: #C62828; margin-bottom: 8px; }
+    p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+    .post-info { background: #FFF3E0; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.8; }
+    .post-info strong { color: #C62828; }
+    button { width: 100%; padding: 14px; background: #C62828; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .result { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .result.success { background: #E8F5E9; color: #1B5E20; display: block; }
+    .result.error   { background: #FFEBEE; color: #B71C1C; display: block; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>🧪 تێستی داتا</h2>
+  <p>ئەم پۆستە بە شێوەی تاقیکردنەوە زیاد دەکرێت — وەک ئەوەی ئەدمین باڕکۆدی کردبێت</p>
+
+  <div class="post-info">
+    <strong>باڕکۆد:</strong> 174437<br>
+    <strong>سایەق:</strong> حکیم چەمچەمال<br>
+    <strong>کڵێنت:</strong> VR game center — 07704636565<br>
+    <strong>وەرگر:</strong> 07709407864<br>
+    <strong>نرخ:</strong> 15,000 IQD (1 دانە)<br>
+    <strong>ناونیشان:</strong> دەرەوەی سلێمانی - بازیان<br>
+    <strong>تێبینی:</strong> n/a
+  </div>
+
+  <button id="add-btn" onclick="addTestPost()">➕ زیادکردنی پۆستی تێست</button>
+  <div class="result" id="result"></div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="assets/js/config/firebase.js"></script>
+
+<script>
+async function addTestPost() {
+  const btn    = document.getElementById('add-btn');
+  const result = document.getElementById('result');
+  btn.disabled = true;
+  btn.textContent = 'چاوەڕێبە...';
+  result.className = 'result';
+
+  try {
+    // Check if barcode already exists
+    const existing = await db.collection('posts')
+      .where('barcode', '==', '174437')
+      .limit(1).get();
+
+    if (!existing.empty) {
+      result.className = 'result error';
+      result.textContent = '⚠️ باڕکۆد 174437 پێشتر تۆمارکراوە!';
+      btn.disabled = false;
+      btn.textContent = '➕ زیادکردنی پۆستی تێست';
+      return;
+    }
+
+    // Find driver by name
+    const driverSnap = await db.collection('Users')
+      .where('role', '==', 'driver')
+      .where('name', '==', 'حکیم چەمچەمال')
+      .limit(1).get();
+
+    let driverId   = '';
+    let driverName = 'حکیم چەمچەمال';
+
+    if (!driverSnap.empty) {
+      driverId   = driverSnap.docs[0].id;
+      driverName = driverSnap.docs[0].data().name;
+    }
+
+    // Add the test post
+    await db.collection('posts').add({
+      barcode:         '174437',
+      driverId:        driverId,
+      driverName:      driverName,
+      receiverPhone:   '07709407864',
+      price:           15000,
+      quantity:        1,
+      clientName:      'VR game center',
+      clientPhone:     '07704636565',
+      address:         'دەرەوەی سلێمانی - بازیان',
+      note:            'n/a',
+      status:          'ready',
+      adminScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      driverScannedAt: null,
+      completedAt:     null,
+      createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy:       'test'
+    });
+
+    result.className = 'result success';
+    result.innerHTML = driverId
+      ? `✅ پۆست زیادکرا! سایەق (${driverName}) دەتوانێت ببینێتی لە بەشی هەڵنەگیراوەکان.`
+      : `✅ پۆست زیادکرا! (تێبینی: سایەق "حکیم چەمچەمال" لە سیستەمدا نەدۆزرایەوە — پێشت دروست بکە)`;
+
+    btn.textContent = '✅ تەواوبوو';
+
+  } catch (err) {
+    result.className = 'result error';
+    result.textContent = '❌ هەڵە: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '➕ زیادکردنی پۆستی تێست';
+  }
+}
+</script>
+</body>
+</html>

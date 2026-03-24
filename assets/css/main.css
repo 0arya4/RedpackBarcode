@@ -315,6 +315,18 @@ p  { font-size: 0.95rem; line-height: 1.6; }
   flex-wrap: wrap;
 }
 
+.post-photo {
+  padding: 10px 14px 0;
+}
+.post-photo img {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+  cursor: pointer;
+  max-height: 220px;
+  object-fit: cover;
+}
+
 /* --- Buttons --- */
 .btn {
   display: inline-flex;

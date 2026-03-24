@@ -23,7 +23,9 @@ const secondaryApp = firebase.initializeApp(firebaseConfig, "secondary");
 // Firebase services
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 const secondaryAuth = secondaryApp.auth();
+
 
 // Enable Firestore offline persistence
 db.enablePersistence().catch((err) => {

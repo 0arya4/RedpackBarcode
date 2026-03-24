@@ -5,6 +5,7 @@
 let currentDriverUser = null;
 let currentTab = 'uncollected';
 let driverPostsCache = { uncollected: [], withme: [], completed: [] };
+let pendingPhotoPostId = null;
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupNavigation();
     setupScanner();
+    setupPhotoCapture();
     setupSearch();
     startRealtimeListeners();
   } catch (e) {
@@ -117,6 +119,7 @@ async function handleDriverScan(barcodeValue) {
     }
 
     const docRef = snapshot.docs[0].ref;
+    const postId = snapshot.docs[0].id;
     await docRef.update({
       status:          'with_driver',
       driverScannedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -124,6 +127,7 @@ async function handleDriverScan(barcodeValue) {
 
     Utils.showToast('پۆست وەرگیرا ✓ — لای من', 'success');
     switchTab('withme');
+    openPhotoCaptureModal(postId);
 
   } catch (err) {
     console.error(err);
@@ -131,6 +135,87 @@ async function handleDriverScan(barcodeValue) {
   } finally {
     Utils.showLoading(false);
   }
+}
+
+// ── Photo Capture ────────────────────────────────────────────
+function openPhotoCaptureModal(postId) {
+  pendingPhotoPostId = postId;
+  document.getElementById('photo-preview-wrap').style.display = 'none';
+  document.getElementById('photo-take-btn').style.display = 'block';
+  document.getElementById('photo-take-btn').textContent = '📷 وێنە بگرە';
+  document.getElementById('photo-confirm-btn').style.display = 'none';
+  document.getElementById('photo-input').value = '';
+  Utils.openModal('modal-photo-capture');
+}
+
+function setupPhotoCapture() {
+  const input      = document.getElementById('photo-input');
+  const preview    = document.getElementById('photo-preview');
+  const previewWrap = document.getElementById('photo-preview-wrap');
+  const takeBtn    = document.getElementById('photo-take-btn');
+  const confirmBtn = document.getElementById('photo-confirm-btn');
+  const skipBtn    = document.getElementById('photo-skip-btn');
+
+  takeBtn.addEventListener('click', () => input.click());
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    preview.src = URL.createObjectURL(file);
+    previewWrap.style.display = 'block';
+    takeBtn.textContent = '🔄 دووبارە بگرە';
+    confirmBtn.style.display = 'block';
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    const file = input.files[0];
+    if (!file || !pendingPhotoPostId) return;
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'چاوەڕێبە...';
+    Utils.showLoading(true);
+
+    try {
+      const compressed = await compressImage(file);
+      const ref = storage.ref(`posts/${pendingPhotoPostId}/photo.jpg`);
+      await ref.put(compressed);
+      const url = await ref.getDownloadURL();
+      await db.collection('posts').doc(pendingPhotoPostId).update({ photoUrl: url });
+      Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
+    } catch (err) {
+      Utils.showToast('هەڵە لە پاشەکەوتکردنی وێنە: ' + err.message, 'error');
+    } finally {
+      Utils.showLoading(false);
+      Utils.closeModal('modal-photo-capture');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '✅ پاشەکەوتکردن';
+      pendingPhotoPostId = null;
+    }
+  });
+
+  skipBtn.addEventListener('click', () => {
+    Utils.closeModal('modal-photo-capture');
+    pendingPhotoPostId = null;
+  });
+}
+
+function compressImage(file, maxWidth = 1200, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.width, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = img.width  * ratio;
+        canvas.height = img.height * ratio;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(resolve, 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 // ── Complete a post ──────────────────────────────────────────
@@ -270,6 +355,7 @@ function renderDriverPostCard(post, section) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(dateField)}</span>
         </div>
       </div>
+      ${post.photoUrl ? `<div class="post-photo"><img src="${post.photoUrl}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
       ${completeBtn}
     </div>`;
 }

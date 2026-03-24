@@ -99,6 +99,27 @@
   </div>
 </div>
 
+<!-- ══════════════════════════ MODAL: PHOTO CAPTURE ══════════════════════════ -->
+<div class="modal" id="modal-photo-capture">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">📷 وێنەی پۆست</span>
+      <button class="modal-close" id="photo-skip-btn">بەبێ وێنە</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">
+        وێنەی پاکەتەکە بگرە بۆ پشتڕاستکردنەوە
+      </p>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
+      <div id="photo-preview-wrap" style="display:none;margin-bottom:16px;">
+        <img id="photo-preview" style="width:100%;border-radius:10px;max-height:260px;object-fit:cover;" />
+      </div>
+      <button class="btn btn-primary btn-full" id="photo-take-btn" style="margin-bottom:8px;">📷 وێنە بگرە</button>
+      <button class="btn btn-success btn-full" id="photo-confirm-btn" style="display:none;margin-bottom:8px;">✅ پاشەکەوتکردن</button>
+    </div>
+  </div>
+</div>
+
 <!-- Loading Overlay -->
 <div id="loading-overlay">
   <div class="spinner"></div>
@@ -109,6 +130,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <!-- App Scripts -->

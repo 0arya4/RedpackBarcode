@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ckb" dir="rtl">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
@@ -9,288 +10,293 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
+
 <body>
-<div class="page-wrapper">
+  <div class="page-wrapper">
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="logo">
-      <div class="logo-icon">RP</div>
-      RED PACK
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span class="user-info" id="admin-name">ئەدمین</span>
-      <button class="btn-logout" onclick="Auth.logout()">چوونەدەرەوە</button>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="content-area">
-
-    <!-- ═══════════════════════════════ TAB: HOME ═══════════════════════════════ -->
-    <div id="tab-home" class="tab-content active">
-      <!-- Big Scan Button -->
-      <div style="padding:24px 16px 12px;">
-        <button class="btn btn-primary btn-full" id="admin-scan-btn"
-          style="padding:20px;font-size:1.1rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);">
-          📷&nbsp;&nbsp;باڕکۆدکردن — بارکۆد بکە
-        </button>
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <div class="logo-icon">RP</div>
+        RED PACK
       </div>
-
-      <!-- Stats Overview -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="stat-ready">0</div>
-          <div class="stat-label">ئامادەی سایەق</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-with-driver">0</div>
-          <div class="stat-label">لای سایەق</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-completed">0</div>
-          <div class="stat-label">تەواوبووەکان</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-total">0</div>
-          <div class="stat-label">کۆی گشتی</div>
-        </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="user-info" id="admin-name">ئەدمین</span>
+        <button class="btn-logout" onclick="Auth.logout()">چوونەدەرەوە</button>
       </div>
+    </header>
 
-      <!-- Recent Posts -->
-      <div class="section-header">
-        <div class="section-title">دواین پۆستەکان</div>
-      </div>
-      <div id="home-recent-posts"></div>
-    </div>
+    <!-- Main Content -->
+    <main class="content-area">
 
-    <!-- ═══════════════════════════════ TAB: POSTS ══════════════════════════════ -->
-    <div id="tab-posts" class="tab-content">
-
-      <!-- Search + Filter Bar -->
-      <div class="filter-bar" style="flex-direction:column;gap:8px;">
-        <input class="form-input" type="text" id="post-search"
-          placeholder="🔍 گەڕان بە ژمارەی باڕکۆد..." dir="ltr"
-          style="margin:0;" />
-        <select class="form-select" id="driver-filter" style="width:100%;">
-          <option value="">هەموو سایەقەکان</option>
-        </select>
-      </div>
-
-      <!-- Sub-tabs -->
-      <div class="sub-tabs">
-        <button class="sub-tab active" data-subtab="ready">
-          ئامادە <span class="section-count" id="count-ready">0</span>
-        </button>
-        <button class="sub-tab" data-subtab="with_driver">
-          لای سایەق <span class="section-count" id="count-with_driver">0</span>
-        </button>
-        <button class="sub-tab" data-subtab="completed">
-          تەواوبوو <span class="section-count" id="count-completed">0</span>
-        </button>
-      </div>
-
-      <!-- Post Lists -->
-      <div id="subtab-ready"       class="subtab-content active"></div>
-      <div id="subtab-with_driver" class="subtab-content" style="display:none;"></div>
-      <div id="subtab-completed"   class="subtab-content" style="display:none;"></div>
-    </div>
-
-    <!-- ═══════════════════════════════ TAB: DRIVERS ════════════════════════════ -->
-    <div id="tab-drivers" class="tab-content">
-      <div class="section-header">
-        <div class="section-title">سایەقەکان</div>
-        <button class="btn btn-primary btn-sm" id="add-driver-btn">+ زیادکردن</button>
-      </div>
-      <div id="drivers-list"></div>
-    </div>
-
-    <!-- ═══════════════════════════════ TAB: STATS ══════════════════════════════ -->
-    <div id="tab-stats" class="tab-content">
-      <div class="section-header">
-        <div class="section-title">ئامارەکان</div>
-      </div>
-      <div class="stats-grid" id="stats-full"></div>
-      <div style="padding:0 16px;">
-        <div class="card">
-          <div class="card-header"><h3>پۆست بە سایەق</h3></div>
-          <div class="card-body" id="stats-by-driver"></div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="home">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-label">سەرەتا</span>
-    </button>
-    <button class="nav-item" data-tab="posts">
-      <span class="nav-icon">📦</span>
-      <span class="nav-label">پۆستەکان</span>
-      <span class="nav-badge" id="nav-badge-posts" style="display:none;"></span>
-    </button>
-    <button class="nav-item" data-tab="drivers">
-      <span class="nav-icon">🚗</span>
-      <span class="nav-label">سایەقەکان</span>
-    </button>
-    <button class="nav-item" data-tab="stats">
-      <span class="nav-icon">📊</span>
-      <span class="nav-label">ئامار</span>
-    </button>
-  </nav>
-
-</div><!-- /page-wrapper -->
-
-<!-- ══════════════════════════ MODAL: BARCODE SCANNER ══════════════════════════ -->
-<div class="modal" id="modal-scanner">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">📷 باڕکۆدکردن</span>
-      <button class="modal-close" id="scanner-close-btn">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">
-        باڕکۆدی ستیکەر ئامانج بگرە
-      </p>
-      <div class="scanner-container">
-        <div id="scanner-view"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════ MODAL: POST FORM ════════════════════════════════ -->
-<div class="modal" id="modal-post-form">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title" id="post-form-title">پۆستی نوێ</span>
-      <button class="modal-close" onclick="Utils.closeModal('modal-post-form')">✕</button>
-    </div>
-    <div class="modal-body">
-      <form id="post-form">
-        <input type="hidden" id="pf-post-id" />
-        <input type="hidden" id="pf-barcode" />
-
-        <div style="background:#FFF3E0;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:0.85rem;color:#E65100;">
-          باڕکۆد: <strong id="pf-barcode-display">—</strong>
+      <!-- ═══════════════════════════════ TAB: HOME ═══════════════════════════════ -->
+      <div id="tab-home" class="tab-content active">
+        <!-- Big Scan Button -->
+        <div style="padding:24px 16px 12px;">
+          <button class="btn btn-primary btn-full" id="admin-scan-btn"
+            style="padding:20px;font-size:1.1rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);">
+            📷&nbsp;&nbsp;باڕکۆدکردن — بارکۆد بکە
+          </button>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">سایەق *</label>
-          <select class="form-select" id="pf-driver" required>
-            <option value="">سایەق هەڵبژێرە</option>
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="stat-ready">0</div>
+            <div class="stat-label">ئامادەی سایەق</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-with-driver">0</div>
+            <div class="stat-label">لای سایەق</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-completed">0</div>
+            <div class="stat-label">تەواوبووەکان</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-total">0</div>
+            <div class="stat-label">کۆی گشتی</div>
+          </div>
+        </div>
+
+        <!-- Recent Posts -->
+        <div class="section-header">
+          <div class="section-title">دواین پۆستەکان</div>
+        </div>
+        <div id="home-recent-posts"></div>
+      </div>
+
+      <!-- ═══════════════════════════════ TAB: POSTS ══════════════════════════════ -->
+      <div id="tab-posts" class="tab-content">
+
+        <!-- Search + Filter Bar -->
+        <div class="filter-bar" style="flex-direction:column;gap:8px;">
+          <input class="form-input" type="text" id="post-search" placeholder="🔍 گەڕان بە ژمارەی باڕکۆد..." dir="ltr"
+            style="margin:0;" />
+          <select class="form-select" id="driver-filter" style="width:100%;">
+            <option value="">هەموو سایەقەکان</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">ژ.م وەرگر (مۆبایلی وەرگر) *</label>
-          <input class="form-input" type="tel" id="pf-receiver-phone" placeholder="07XXXXXXXXX" required dir="ltr" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">نرخ (دینار) *</label>
-          <input class="form-input" type="number" id="pf-price" placeholder="15000" required dir="ltr" min="0" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">دانە</label>
-          <input class="form-input" type="number" id="pf-quantity" placeholder="1" dir="ltr" min="1" value="1" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">کڵێنت / عمیل *</label>
-          <input class="form-input" type="text" id="pf-client-name" placeholder="ناوی کڵێنت" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">مۆبایلی کڵێنت</label>
-          <input class="form-input" type="tel" id="pf-client-phone" placeholder="07XXXXXXXXX" dir="ltr" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">ناونیشان *</label>
-          <input class="form-input" type="text" id="pf-address" placeholder="شار - ناوچە" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">تێبینی</label>
-          <input class="form-input" type="text" id="pf-note" placeholder="تێبینی (ئیختیاری)" />
-        </div>
-
-        <div style="display:flex;gap:10px;margin-top:8px;">
-          <button type="submit" class="btn btn-primary" style="flex:1;" id="pf-submit-btn">
-            پاشەکەوتکردن
+        <!-- Sub-tabs -->
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="ready">
+            ئامادە <span class="section-count" id="count-ready">0</span>
           </button>
-          <button type="button" class="btn btn-secondary" onclick="Utils.closeModal('modal-post-form')">
-            هەڵوەشاندنەوە
+          <button class="sub-tab" data-subtab="with_driver">
+            لای سایەق <span class="section-count" id="count-with_driver">0</span>
+          </button>
+          <button class="sub-tab" data-subtab="completed">
+            تەواوبوو <span class="section-count" id="count-completed">0</span>
           </button>
         </div>
-      </form>
+
+        <!-- Post Lists -->
+        <div id="subtab-ready" class="subtab-content active"></div>
+        <div id="subtab-with_driver" class="subtab-content" style="display:none;"></div>
+        <div id="subtab-completed" class="subtab-content" style="display:none;"></div>
+      </div>
+
+      <!-- ═══════════════════════════════ TAB: DRIVERS ════════════════════════════ -->
+      <div id="tab-drivers" class="tab-content">
+        <div class="section-header">
+          <div class="section-title">سایەقەکان</div>
+          <button class="btn btn-primary btn-sm" id="add-driver-btn">+ زیادکردن</button>
+        </div>
+        <div id="drivers-list"></div>
+      </div>
+
+      <!-- ═══════════════════════════════ TAB: STATS ══════════════════════════════ -->
+      <div id="tab-stats" class="tab-content">
+        <div class="section-header">
+          <div class="section-title">ئامارەکان</div>
+        </div>
+        <div class="stats-grid" id="stats-full"></div>
+        <div style="padding:0 16px;">
+          <div class="card">
+            <div class="card-header">
+              <h3>پۆست بە سایەق</h3>
+            </div>
+            <div class="card-body" id="stats-by-driver"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">سەرەتا</span>
+      </button>
+      <button class="nav-item" data-tab="posts">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">پۆستەکان</span>
+        <span class="nav-badge" id="nav-badge-posts" style="display:none;"></span>
+      </button>
+      <button class="nav-item" data-tab="drivers">
+        <span class="nav-icon">🚗</span>
+        <span class="nav-label">سایەقەکان</span>
+      </button>
+      <button class="nav-item" data-tab="stats">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">ئامار</span>
+      </button>
+    </nav>
+
+  </div><!-- /page-wrapper -->
+
+  <!-- ══════════════════════════ MODAL: BARCODE SCANNER ══════════════════════════ -->
+  <div class="modal" id="modal-scanner">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <span class="modal-title">📷 باڕکۆدکردن</span>
+        <button class="modal-close" id="scanner-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">
+          باڕکۆدی ستیکەر ئامانج بگرە
+        </p>
+        <div class="scanner-container">
+          <div id="scanner-view"></div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ══════════════════════════ MODAL: ADD/EDIT DRIVER ══════════════════════════ -->
-<div class="modal" id="modal-driver-form">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title" id="driver-form-title">سایەقی نوێ</span>
-      <button class="modal-close" onclick="Utils.closeModal('modal-driver-form')">✕</button>
-    </div>
-    <div class="modal-body">
-      <form id="driver-form">
-        <input type="hidden" id="df-driver-uid" />
+  <!-- ══════════════════════════ MODAL: POST FORM ════════════════════════════════ -->
+  <div class="modal" id="modal-post-form">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <span class="modal-title" id="post-form-title">پۆستی نوێ</span>
+        <button class="modal-close" onclick="Utils.closeModal('modal-post-form')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="post-form">
+          <input type="hidden" id="pf-post-id" />
+          <input type="hidden" id="pf-barcode" />
 
-        <div class="form-group">
-          <label class="form-label">ناوی سایەق *</label>
-          <input class="form-input" type="text" id="df-name" placeholder="ناوی تەواو" required />
-        </div>
+          <div
+            style="background:#FFF3E0;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:0.85rem;color:#E65100;">
+            باڕکۆد: <strong id="pf-barcode-display">—</strong>
+          </div>
 
-        <div class="form-group">
-          <label class="form-label">ئیمەیڵ *</label>
-          <input class="form-input" type="email" id="df-email" placeholder="name@example.com" required dir="ltr" />
-        </div>
+          <div class="form-group">
+            <label class="form-label">سایەق *</label>
+            <select class="form-select" id="pf-driver" required>
+              <option value="">سایەق هەڵبژێرە</option>
+            </select>
+          </div>
 
-        <div class="form-group" id="df-password-group">
-          <label class="form-label">پاسوۆرد *</label>
-          <input class="form-input" type="password" id="df-password" placeholder="کەمترین 6 پیت" dir="ltr" />
-        </div>
+          <div class="form-group">
+            <label class="form-label">ژ.م وەرگر (مۆبایلی وەرگر) *</label>
+            <input class="form-input" type="tel" id="pf-receiver-phone" placeholder="07XXXXXXXXX" required dir="ltr" />
+          </div>
 
-        <div style="display:flex;gap:10px;margin-top:8px;">
-          <button type="submit" class="btn btn-primary" style="flex:1;" id="df-submit-btn">
-            پاشەکەوتکردن
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="Utils.closeModal('modal-driver-form')">
-            هەڵوەشاندنەوە
-          </button>
-        </div>
-      </form>
+          <div class="form-group">
+            <label class="form-label">نرخ (دینار) *</label>
+            <input class="form-input" type="number" id="pf-price" placeholder="15000" required dir="ltr" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">دانە</label>
+            <input class="form-input" type="number" id="pf-quantity" placeholder="1" dir="ltr" min="1" value="1" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">کڵێنت / عمیل *</label>
+            <input class="form-input" type="text" id="pf-client-name" placeholder="ناوی کڵێنت" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">مۆبایلی کڵێنت</label>
+            <input class="form-input" type="tel" id="pf-client-phone" placeholder="07XXXXXXXXX" dir="ltr" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ناونیشان *</label>
+            <input class="form-input" type="text" id="pf-address" placeholder="شار - ناوچە" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">تێبینی</label>
+            <input class="form-input" type="text" id="pf-note" placeholder="تێبینی (ئیختیاری)" />
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;" id="pf-submit-btn">
+              پاشەکەوتکردن
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="Utils.closeModal('modal-post-form')">
+              هەڵوەشاندنەوە
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Loading Overlay -->
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <p>چاوەڕێبە...</p>
-</div>
+  <!-- ══════════════════════════ MODAL: ADD/EDIT DRIVER ══════════════════════════ -->
+  <div class="modal" id="modal-driver-form">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <span class="modal-title" id="driver-form-title">سایەقی نوێ</span>
+        <button class="modal-close" onclick="Utils.closeModal('modal-driver-form')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="driver-form">
+          <input type="hidden" id="df-driver-uid" />
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+          <div class="form-group">
+            <label class="form-label">ناوی سایەق *</label>
+            <input class="form-input" type="text" id="df-name" placeholder="ناوی تەواو" required />
+          </div>
 
-<!-- App Scripts -->
-<script src="assets/js/config/firebase.js"></script>
-<script src="assets/js/modules/utils.js"></script>
-<script src="assets/js/modules/auth.js"></script>
-<script src="assets/js/modules/barcode.js"></script>
-<script src="assets/js/modules/api.js"></script>
-<script src="assets/js/pages/admin.js"></script>
+          <div class="form-group">
+            <label class="form-label">ئیمەیڵ *</label>
+            <input class="form-input" type="email" id="df-email" placeholder="name@example.com" required dir="ltr" />
+          </div>
+
+          <div class="form-group" id="df-password-group">
+            <label class="form-label">پاسوۆرد *</label>
+            <input class="form-input" type="password" id="df-password" placeholder="کەمترین 6 پیت" dir="ltr" />
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;" id="df-submit-btn">
+              پاشەکەوتکردن
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="Utils.closeModal('modal-driver-form')">
+              هەڵوەشاندنەوە
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>چاوەڕێبە...</p>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- App Scripts -->
+  <script src="assets/js/config/firebase.js"></script>
+  <script src="assets/js/modules/utils.js"></script>
+  <script src="assets/js/modules/auth.js"></script>
+  <script src="assets/js/modules/barcode.js"></script>
+  <script src="assets/js/modules/api.js"></script>
+  <script src="assets/js/pages/admin.js"></script>
 
 </body>
+
 </html>

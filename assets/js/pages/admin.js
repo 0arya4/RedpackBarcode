@@ -343,6 +343,7 @@ function renderPostCard(post, showActions) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
         </div>
       </div>
+      ${post.photoUrl ? `<div class="post-photo"><img src="${post.photoUrl}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
       ${actions}
     </div>`;
 }

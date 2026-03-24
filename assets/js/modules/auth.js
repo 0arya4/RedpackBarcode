@@ -17,7 +17,7 @@ const Auth = {
   // Logout current user
   async logout() {
     await auth.signOut();
-    window.location.href = '/index.html';
+    window.location.href = 'index.html';
   },
 
   // Get user document from Firestore
@@ -84,12 +84,12 @@ const Auth = {
     return new Promise((resolve, reject) => {
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
-          window.location.href = '/index.html';
+          window.location.href = 'index.html';
           return reject('Not authenticated');
         }
         const userData = await this.getUserData(user.uid);
         if (!userData || userData.role !== expectedRole) {
-          window.location.href = '/index.html';
+          window.location.href = 'index.html';
           return reject('Wrong role');
         }
         resolve({ user, userData });
