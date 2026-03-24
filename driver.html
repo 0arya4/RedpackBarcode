@@ -104,22 +104,8 @@
   </div>
 </div>
 
-<!-- ══════════════════════════ MODAL: PHOTO CAPTURE ══════════════════════════ -->
-<div class="modal" id="modal-photo-capture">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">📷 وێنەی پۆست</span>
-      <button class="modal-close" id="photo-skip-btn">بەبێ وێنە</button>
-    </div>
-    <div class="modal-body" style="text-align:center;">
-      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">
-        وێنەی پاکەتەکە بگرە بۆ پشتڕاستکردنەوە
-      </p>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
-      <button class="btn btn-primary btn-full" id="photo-take-btn">📷 وێنە بگرە</button>
-    </div>
-  </div>
-</div>
+<!-- Hidden photo input — triggered directly after scan -->
+<input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
 
 <!-- Loading Overlay -->
 <div id="loading-overlay">

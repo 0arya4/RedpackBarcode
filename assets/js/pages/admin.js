@@ -45,6 +45,9 @@ function switchTab(tabName) {
   document.querySelector(`.nav-item[data-tab="${tabName}"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
+  const fab = document.getElementById('admin-scan-btn');
+  if (fab) fab.style.display = (tabName === 'home' || tabName === 'posts') ? 'flex' : 'none';
+
   if (tabName === 'stats') loadStats();
 }
 
@@ -273,7 +276,7 @@ function renderAllSections(posts) {
         p.barcode?.toLowerCase().includes(currentSearchQuery)
       );
     }
-    renderPostList(`subtab-${status}`, filtered, true);
+    renderPostList(`list-${status}`, filtered, true);
   });
 }
 
@@ -598,16 +601,13 @@ async function loadStats() {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
-  document.getElementById('photo-input').value = '';
-  Utils.openModal('modal-photo-capture');
+  const input = document.getElementById('photo-input');
+  input.value = '';
+  input.click();
 }
 
 function setupPhotoCapture() {
-  const input   = document.getElementById('photo-input');
-  const takeBtn = document.getElementById('photo-take-btn');
-  const skipBtn = document.getElementById('photo-skip-btn');
-
-  takeBtn.addEventListener('click', () => input.click());
+  const input = document.getElementById('photo-input');
 
   input.addEventListener('change', async () => {
     const file = input.files[0];
@@ -630,10 +630,6 @@ function setupPhotoCapture() {
     }
   });
 
-  skipBtn.addEventListener('click', () => {
-    Utils.closeModal('modal-photo-capture');
-    pendingPhotoPostId = null;
-  });
 }
 
 function compressToBase64(file, maxWidth = 600, quality = 0.5) {

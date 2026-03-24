@@ -140,16 +140,13 @@ async function handleDriverScan(barcodeValue) {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
-  document.getElementById('photo-input').value = '';
-  Utils.openModal('modal-photo-capture');
+  const input = document.getElementById('photo-input');
+  input.value = '';
+  input.click();
 }
 
 function setupPhotoCapture() {
-  const input   = document.getElementById('photo-input');
-  const takeBtn = document.getElementById('photo-take-btn');
-  const skipBtn = document.getElementById('photo-skip-btn');
-
-  takeBtn.addEventListener('click', () => input.click());
+  const input = document.getElementById('photo-input');
 
   input.addEventListener('change', async () => {
     const file = input.files[0];
@@ -174,10 +171,6 @@ function setupPhotoCapture() {
     }
   });
 
-  skipBtn.addEventListener('click', () => {
-    Utils.closeModal('modal-photo-capture');
-    pendingPhotoPostId = null;
-  });
 }
 
 function compressToBase64(file, maxWidth = 600, quality = 0.5) {

@@ -31,14 +31,6 @@
 
       <!-- ═══════════════════════════════ TAB: HOME ═══════════════════════════════ -->
       <div id="tab-home" class="tab-content active">
-        <!-- Big Scan Button -->
-        <div style="padding:24px 16px 12px;">
-          <button class="btn btn-primary btn-full" id="admin-scan-btn"
-            style="padding:20px;font-size:1.1rem;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);">
-            📷&nbsp;&nbsp;باڕکۆدکردن — بارکۆد بکە
-          </button>
-        </div>
-
         <!-- Stats Overview -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -92,14 +84,19 @@
         </div>
 
         <!-- Post Lists -->
-        <div id="subtab-ready" class="subtab-content active"></div>
-        <div id="subtab-with_driver" class="subtab-content" style="display:none;"></div>
+        <div id="subtab-ready" class="subtab-content active">
+          <div id="list-ready"></div>
+        </div>
+        <div id="subtab-with_driver" class="subtab-content" style="display:none;">
+          <div id="list-with_driver"></div>
+        </div>
         <div id="subtab-completed" class="subtab-content" style="display:none;">
           <div style="padding:8px 16px 0;">
             <button class="btn btn-danger btn-full" id="delete-all-completed-btn" style="display:none;" onclick="deleteAllCompleted()">
               🗑️ سڕینەوەی هەموو تەواوبووەکان
             </button>
           </div>
+          <div id="list-completed"></div>
         </div>
       </div>
 
@@ -282,22 +279,13 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════ MODAL: PHOTO CAPTURE ══════════════════════════ -->
-  <div class="modal" id="modal-photo-capture">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        <span class="modal-title">📷 وێنەی پۆست</span>
-        <button class="modal-close" id="photo-skip-btn">بەبێ وێنە</button>
-      </div>
-      <div class="modal-body" style="text-align:center;">
-        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">
-          وێنەی پاکەتەکە بگرە بۆ پشتڕاستکردنەوە
-        </p>
-        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
-        <button class="btn btn-primary btn-full" id="photo-take-btn">📷 وێنە بگرە</button>
-      </div>
-    </div>
-  </div>
+  <!-- Floating Scan Button -->
+  <button class="fab" id="admin-scan-btn">
+    📷&nbsp;&nbsp;باڕکۆد بکە
+  </button>
+
+  <!-- Hidden photo input — triggered directly after scan -->
+  <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
 
   <!-- Loading Overlay -->
   <div id="loading-overlay">
