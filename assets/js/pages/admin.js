@@ -347,7 +347,7 @@ function renderPostCard(post, showActions) {
           <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
         </div>
       </div>
-      ${post.photoUrl ? `<div class="post-photo"><img src="${post.photoUrl}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
+      ${post.photo ? `<div class="post-photo"><img src="${post.photo}" alt="وێنەی پۆست" onclick="window.open(this.src,'_blank')"></div>` : ''}
       ${actions}
     </div>`;
 }
@@ -571,18 +571,17 @@ function setupPhotoCapture() {
     Utils.closeModal('modal-photo-capture');
     Utils.showLoading(true);
 
+    const postId = pendingPhotoPostId;
+    pendingPhotoPostId = null;
+
     try {
-      const blob = await compressImage(file);
-      const ref  = storage.ref(`posts/${pendingPhotoPostId}/photo.jpg`);
-      await ref.put(blob);
-      const url = await ref.getDownloadURL();
-      await db.collection('posts').doc(pendingPhotoPostId).update({ photoUrl: url });
+      const base64 = await compressToBase64(file);
+      await db.collection('posts').doc(postId).update({ photo: base64 });
       Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
     } catch (err) {
-      Utils.showToast('هەڵە لە پاشەکەوتکردنی وێنە: ' + err.message, 'error');
+      Utils.showToast('هەڵە: ' + err.message, 'error');
     } finally {
       Utils.showLoading(false);
-      pendingPhotoPostId = null;
     }
   });
 
@@ -592,29 +591,20 @@ function setupPhotoCapture() {
   });
 }
 
-function compressImage(file, maxWidth = 800, quality = 0.65) {
-  return new Promise((resolve) => {
+function compressToBase64(file, maxWidth = 600, quality = 0.5) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => resolve(file);
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.onload = (e) => {
       const img = new Image();
-      img.onerror = () => resolve(file);
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.onload = () => {
-        try {
-          const ratio  = Math.min(maxWidth / img.width, 1);
-          const canvas = document.createElement('canvas');
-          canvas.width  = Math.round(img.width  * ratio);
-          canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          // toDataURL is synchronous — never hangs unlike toBlob
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          const bytes   = atob(dataUrl.split(',')[1]);
-          const arr     = new Uint8Array(bytes.length);
-          for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-          resolve(new Blob([arr], { type: 'image/jpeg' }));
-        } catch (_) {
-          resolve(file);
-        }
+        const ratio  = Math.min(maxWidth / img.width, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.src = e.target.result;
     };
