@@ -42,7 +42,7 @@ function switchTab(tabName) {
 
   // Hide FAB on completed tab
   const fab = document.getElementById('driver-scan-fab');
-  fab.style.display = tabName === 'completed' ? 'none' : 'flex';
+  fab.style.display = tabName === 'uncollected' ? 'flex' : 'none';
 }
 
 // ── Search ───────────────────────────────────────────────────
@@ -199,6 +199,29 @@ function compressToBase64(file, maxWidth = 600, quality = 0.5) {
   });
 }
 
+// ── Complete all posts ───────────────────────────────────────
+async function completeAllPosts() {
+  const posts = driverPostsCache.withme;
+  if (!posts.length) return;
+
+  const confirmed = await Utils.confirm(`دڵنیایت لە تەواوکردنی هەموو ${posts.length} پۆستەکە؟`);
+  if (!confirmed) return;
+
+  Utils.showLoading(true);
+  try {
+    const batch = db.batch();
+    const now   = firebase.firestore.FieldValue.serverTimestamp();
+    posts.forEach(p => {
+      batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
+    });
+    await batch.commit();
+    Utils.showToast(`${posts.length} پۆست تەواوبوون ✓`, 'success');
+  } catch (err) {
+    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
+  }
+  Utils.showLoading(false);
+}
+
 // ── Complete a post ──────────────────────────────────────────
 async function completePost(postId) {
   const confirmed = await Utils.confirm('دڵنیایت لە تەواوکردنی ئەم پۆستە؟');
@@ -248,6 +271,8 @@ function startRealtimeListeners() {
 
       renderDriverList('list-withme', withMe, 'withme');
       updateBadge('badge-withme', withMe.length);
+      const completeAllBtn = document.getElementById('complete-all-btn');
+      if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
 
       renderDriverList('list-completed', completed, 'completed');
     });
