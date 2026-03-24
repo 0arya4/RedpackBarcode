@@ -9,6 +9,7 @@ let currentSubTab = 'ready';
 let postListeners = {};
 let currentSearchQuery = '';
 let allPostsCache = [];
+let pendingPhotoPostId = null;
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSubTabs();
     setupForms();
     setupScannerModal();
+    setupPhotoCapture();
     startRealtimeListeners();
     loadStats();
   } catch (e) {
@@ -191,9 +193,10 @@ async function handlePostFormSubmit(e) {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       Utils.showToast('پۆست نوێکرایەوە ✓', 'success');
+      Utils.closeModal('modal-post-form');
     } else {
       // Create new post
-      await db.collection('posts').add({
+      const newRef = await db.collection('posts').add({
         ...data,
         status:          'ready',
         adminScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
@@ -203,8 +206,9 @@ async function handlePostFormSubmit(e) {
         createdBy:       currentAdminUser.uid
       });
       Utils.showToast('پۆست پاشەکەوتکرا ✓', 'success');
+      Utils.closeModal('modal-post-form');
+      openPhotoCaptureModal(newRef.id);
     }
-    Utils.closeModal('modal-post-form');
   } catch (err) {
     console.error(err);
     Utils.showToast('هەڵەیەک ڕوویدا: ' + err.message, 'error');
@@ -544,4 +548,85 @@ async function loadStats() {
         <span class="badge badge-info">${count} پۆست</span>
       </div>
     `).join('');
+}
+
+// ── Photo Capture ────────────────────────────────────────────
+function openPhotoCaptureModal(postId) {
+  pendingPhotoPostId = postId;
+  document.getElementById('photo-preview-wrap').style.display = 'none';
+  document.getElementById('photo-take-btn').style.display = 'block';
+  document.getElementById('photo-take-btn').textContent = '📷 وێنە بگرە';
+  document.getElementById('photo-confirm-btn').style.display = 'none';
+  document.getElementById('photo-input').value = '';
+  Utils.openModal('modal-photo-capture');
+}
+
+function setupPhotoCapture() {
+  const input       = document.getElementById('photo-input');
+  const preview     = document.getElementById('photo-preview');
+  const previewWrap = document.getElementById('photo-preview-wrap');
+  const takeBtn     = document.getElementById('photo-take-btn');
+  const confirmBtn  = document.getElementById('photo-confirm-btn');
+  const skipBtn     = document.getElementById('photo-skip-btn');
+
+  takeBtn.addEventListener('click', () => input.click());
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    preview.src = URL.createObjectURL(file);
+    previewWrap.style.display = 'block';
+    takeBtn.textContent = '🔄 دووبارە بگرە';
+    confirmBtn.style.display = 'block';
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    const file = input.files[0];
+    if (!file || !pendingPhotoPostId) return;
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'چاوەڕێبە...';
+    Utils.showLoading(true);
+
+    try {
+      const compressed = await compressImage(file);
+      const ref = storage.ref(`posts/${pendingPhotoPostId}/photo.jpg`);
+      await ref.put(compressed);
+      const url = await ref.getDownloadURL();
+      await db.collection('posts').doc(pendingPhotoPostId).update({ photoUrl: url });
+      Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
+    } catch (err) {
+      Utils.showToast('هەڵە لە پاشەکەوتکردنی وێنە: ' + err.message, 'error');
+    } finally {
+      Utils.showLoading(false);
+      Utils.closeModal('modal-photo-capture');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '✅ پاشەکەوتکردن';
+      pendingPhotoPostId = null;
+    }
+  });
+
+  skipBtn.addEventListener('click', () => {
+    Utils.closeModal('modal-photo-capture');
+    pendingPhotoPostId = null;
+  });
+}
+
+function compressImage(file, maxWidth = 1200, quality = 0.75) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.width, 1);
+        const canvas = document.createElement('canvas');
+        canvas.width  = img.width  * ratio;
+        canvas.height = img.height * ratio;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(resolve, 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
