@@ -249,6 +249,9 @@ function updateCountsAndBadges(posts) {
   document.getElementById('count-with_driver').textContent = counts.with_driver;
   document.getElementById('count-completed').textContent   = counts.completed;
 
+  const deleteAllBtn = document.getElementById('delete-all-completed-btn');
+  if (deleteAllBtn) deleteAllBtn.style.display = counts.completed > 0 ? 'block' : 'none';
+
   const pendingCount = counts.ready + counts.with_driver;
   const badge = document.getElementById('nav-badge-posts');
   if (pendingCount > 0) {
@@ -382,6 +385,25 @@ async function editPost(postId) {
   if (!doc.exists) { Utils.showToast('پۆست نەدۆزرایەوە', 'error'); return; }
   const post = { id: doc.id, ...doc.data() };
   openPostForm(post.barcode, null, post);
+}
+
+async function deleteAllCompleted() {
+  const posts = allPostsCache.filter(p => p.status === 'completed');
+  if (!posts.length) return;
+
+  const confirmed = await Utils.confirm(`دڵنیایت لە سڕینەوەی هەموو ${posts.length} پۆستی تەواوبووەکان؟`);
+  if (!confirmed) return;
+
+  Utils.showLoading(true);
+  try {
+    const batch = db.batch();
+    posts.forEach(p => batch.delete(db.collection('posts').doc(p.id)));
+    await batch.commit();
+    Utils.showToast(`${posts.length} پۆست سڕایەوە ✓`, 'success');
+  } catch (err) {
+    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
+  }
+  Utils.showLoading(false);
 }
 
 async function deletePost(postId) {

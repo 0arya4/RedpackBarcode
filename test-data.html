@@ -10,9 +10,10 @@
     .card { background: white; border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
     h2 { color: #C62828; margin-bottom: 8px; }
     p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
-    .post-info { background: #FFF3E0; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.8; }
+    .post-info { background: #FFF3E0; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 0.85rem; line-height: 1.8; }
     .post-info strong { color: #C62828; }
-    button { width: 100%; padding: 14px; background: #C62828; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    .post-info h4 { color: #C62828; margin: 0 0 6px; font-size: 0.9rem; }
+    button { width: 100%; padding: 14px; background: #C62828; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
     button:disabled { background: #ccc; cursor: not-allowed; }
     .result { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
     .result.success { background: #E8F5E9; color: #1B5E20; display: block; }
@@ -22,19 +23,29 @@
 <body>
 <div class="card">
   <h2>🧪 تێستی داتا</h2>
-  <p>ئەم پۆستە بە شێوەی تاقیکردنەوە زیاد دەکرێت — وەک ئەوەی ئەدمین باڕکۆدی کردبێت</p>
+  <p>دوو پۆست بە شێوەی تاقیکردنەوە زیاد دەکرێن — وەک ئەوەی ئەدمین باڕکۆدی کردبێت</p>
 
   <div class="post-info">
+    <h4>پۆست ١</h4>
     <strong>باڕکۆد:</strong> 174437<br>
     <strong>سایەق:</strong> حکیم چەمچەمال<br>
     <strong>کڵێنت:</strong> VR game center — 07704636565<br>
     <strong>وەرگر:</strong> 07709407864<br>
     <strong>نرخ:</strong> 15,000 IQD (1 دانە)<br>
-    <strong>ناونیشان:</strong> دەرەوەی سلێمانی - بازیان<br>
-    <strong>تێبینی:</strong> n/a
+    <strong>ناونیشان:</strong> دەرەوەی سلێمانی - بازیان
   </div>
 
-  <button id="add-btn" onclick="addTestPost()">➕ زیادکردنی پۆستی تێست</button>
+  <div class="post-info">
+    <h4>پۆست ٢</h4>
+    <strong>باڕکۆد:</strong> 174250<br>
+    <strong>سایەق:</strong> حکیم چەمچەمال<br>
+    <strong>کڵێنت:</strong> نۆڤا کاکاو — 07759244095<br>
+    <strong>وەرگر:</strong> 07709773209<br>
+    <strong>نرخ:</strong> 41,000 IQD (1 دانە)<br>
+    <strong>ناونیشان:</strong> دەرەوەی سلێمانی - چەمچەمال
+  </div>
+
+  <button id="add-btn" onclick="addTestPosts()">➕ زیادکردنی هەر دوو پۆستەکە</button>
   <div class="result" id="result"></div>
 </div>
 
@@ -45,7 +56,30 @@
 <script src="assets/js/config/firebase.js"></script>
 
 <script>
-async function addTestPost() {
+function makeTestPhoto(barcode, clientName, address) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 400; canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFF3E0';
+  ctx.fillRect(0, 0, 400, 300);
+  ctx.fillStyle = '#C62828';
+  ctx.fillRect(0, 0, 400, 50);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('RED PACK — TEST PHOTO', 200, 33);
+  ctx.fillStyle = '#333';
+  ctx.font = '18px sans-serif';
+  ctx.fillText('باڕکۆد: ' + barcode, 200, 110);
+  ctx.fillText(clientName, 200, 145);
+  ctx.fillText(address, 200, 180);
+  ctx.fillStyle = '#999';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('📷 وێنەی تێست — ئەدمین', 200, 270);
+  return canvas.toDataURL('image/jpeg', 0.8);
+}
+
+async function addTestPosts() {
   const btn    = document.getElementById('add-btn');
   const result = document.getElementById('result');
   btn.disabled = true;
@@ -53,20 +87,24 @@ async function addTestPost() {
   result.className = 'result';
 
   try {
-    // Check if barcode already exists
-    const existing = await db.collection('posts')
-      .where('barcode', '==', '174437')
-      .limit(1).get();
+    // Check both barcodes
+    const [snap1, snap2] = await Promise.all([
+      db.collection('posts').where('barcode', '==', '174437').limit(1).get(),
+      db.collection('posts').where('barcode', '==', '174250').limit(1).get()
+    ]);
 
-    if (!existing.empty) {
+    const exists1 = !snap1.empty;
+    const exists2 = !snap2.empty;
+
+    if (exists1 && exists2) {
       result.className = 'result error';
-      result.textContent = '⚠️ باڕکۆد 174437 پێشتر تۆمارکراوە!';
+      result.textContent = '⚠️ هەر دوو باڕکۆدەکە پێشتر تۆمارکراون!';
       btn.disabled = false;
-      btn.textContent = '➕ زیادکردنی پۆستی تێست';
+      btn.textContent = '➕ زیادکردنی هەر دوو پۆستەکە';
       return;
     }
 
-    // Find driver by name
+    // Find driver
     const driverSnap = await db.collection('Users')
       .where('role', '==', 'driver')
       .where('name', '==', 'حکیم چەمچەمال')
@@ -74,59 +112,67 @@ async function addTestPost() {
 
     let driverId   = '';
     let driverName = 'حکیم چەمچەمال';
-
     if (!driverSnap.empty) {
       driverId   = driverSnap.docs[0].id;
       driverName = driverSnap.docs[0].data().name;
     }
 
-    // Generate a test photo (simulates admin taking a photo)
-    const canvas = document.createElement('canvas');
-    canvas.width = 400; canvas.height = 300;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFF3E0';
-    ctx.fillRect(0, 0, 400, 300);
-    ctx.fillStyle = '#C62828';
-    ctx.fillRect(0, 0, 400, 50);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('RED PACK — TEST PHOTO', 200, 33);
-    ctx.fillStyle = '#333';
-    ctx.font = '18px sans-serif';
-    ctx.fillText('باڕکۆد: 174437', 200, 110);
-    ctx.fillText('VR game center', 200, 145);
-    ctx.fillText('بازیان — دەرەوەی سلێمانی', 200, 180);
-    ctx.fillStyle = '#999';
-    ctx.font = '13px sans-serif';
-    ctx.fillText('📷 وێنەی تێست — ئەدمین', 200, 270);
-    const testPhoto = canvas.toDataURL('image/jpeg', 0.8);
+    const batch = db.batch();
+    const now   = firebase.firestore.FieldValue.serverTimestamp();
 
-    // Add the test post
-    await db.collection('posts').add({
-      barcode:         '174437',
-      driverId:        driverId,
-      driverName:      driverName,
-      receiverPhone:   '07709407864',
-      price:           15000,
-      quantity:        1,
-      clientName:      'VR game center',
-      clientPhone:     '07704636565',
-      address:         'دەرەوەی سلێمانی - بازیان',
-      note:            'n/a',
-      status:          'ready',
-      photoAdmin:      testPhoto,
-      adminScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-      driverScannedAt: null,
-      completedAt:     null,
-      createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
-      createdBy:       'test'
-    });
+    if (!exists1) {
+      const ref1 = db.collection('posts').doc();
+      batch.set(ref1, {
+        barcode:         '174437',
+        driverId,
+        driverName,
+        receiverPhone:   '07709407864',
+        price:           15000,
+        quantity:        1,
+        clientName:      'VR game center',
+        clientPhone:     '07704636565',
+        address:         'دەرەوەی سلێمانی - بازیان',
+        note:            'n/a',
+        status:          'ready',
+        photoAdmin:      makeTestPhoto('174437', 'VR game center', 'بازیان'),
+        adminScannedAt:  now,
+        driverScannedAt: null,
+        completedAt:     null,
+        createdAt:       now,
+        createdBy:       'test'
+      });
+    }
 
+    if (!exists2) {
+      const ref2 = db.collection('posts').doc();
+      batch.set(ref2, {
+        barcode:         '174250',
+        driverId,
+        driverName,
+        receiverPhone:   '07709773209',
+        price:           41000,
+        quantity:        1,
+        clientName:      'نۆڤا کاکاو',
+        clientPhone:     '07759244095',
+        address:         'دەرەوەی سلێمانی - چەمچەمال',
+        note:            'n/a',
+        status:          'ready',
+        photoAdmin:      makeTestPhoto('174250', 'نۆڤا کاکاو', 'چەمچەمال'),
+        adminScannedAt:  now,
+        driverScannedAt: null,
+        completedAt:     null,
+        createdAt:       now,
+        createdBy:       'test'
+      });
+    }
+
+    await batch.commit();
+
+    const added = [!exists1 && '174437', !exists2 && '174250'].filter(Boolean).join(' و ');
     result.className = 'result success';
     result.innerHTML = driverId
-      ? `✅ پۆست زیادکرا! سایەق (${driverName}) دەتوانێت ببینێتی لە بەشی هەڵنەگیراوەکان.`
-      : `✅ پۆست زیادکرا! (تێبینی: سایەق "حکیم چەمچەمال" لە سیستەمدا نەدۆزرایەوە — پێشت دروست بکە)`;
+      ? `✅ پۆست ${added} زیادکران! سایەق (${driverName}) دەتوانێت ببینێتیان.`
+      : `✅ پۆستەکان زیادکران! (تێبینی: سایەق نەدۆزرایەوە — پێشت دروست بکە)`;
 
     btn.textContent = '✅ تەواوبوو';
 
@@ -134,7 +180,7 @@ async function addTestPost() {
     result.className = 'result error';
     result.textContent = '❌ هەڵە: ' + err.message;
     btn.disabled = false;
-    btn.textContent = '➕ زیادکردنی پۆستی تێست';
+    btn.textContent = '➕ زیادکردنی هەر دوو پۆستەکە';
   }
 }
 </script>

@@ -105,6 +105,30 @@ const Utils = {
     });
   },
 
+  // Show a prominent top banner (for scan success)
+  showBanner(message) {
+    const existing = document.getElementById('success-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'success-banner';
+    banner.textContent = message;
+    banner.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+      background: #2E7D32; color: #fff;
+      text-align: center; padding: 14px 16px;
+      font-size: 1rem; font-weight: 700;
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
+    `;
+    document.body.appendChild(banner);
+    requestAnimationFrame(() => banner.style.transform = 'translateY(0)');
+    setTimeout(() => {
+      banner.style.transform = 'translateY(-100%)';
+      setTimeout(() => banner.remove(), 300);
+    }, 2500);
+  },
+
   // Open photo in fullscreen lightbox
   openPhoto(src) {
     const lb = document.createElement('div');

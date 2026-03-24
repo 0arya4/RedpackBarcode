@@ -164,7 +164,9 @@ function setupPhotoCapture() {
     try {
       const base64 = await compressToBase64(file);
       await db.collection('posts').doc(postId).update({ photoDriver: base64 });
-      Utils.showToast('وێنە پاشەکەوتکرا ✓', 'success');
+      Utils.showBanner('✅ پۆست هەڵگیرا و وێنە گیرا');
+      switchTab('uncollected');
+      setTimeout(() => openDriverScanner(), 1000);
     } catch (err) {
       Utils.showToast('هەڵە: ' + err.message, 'error');
     } finally {
