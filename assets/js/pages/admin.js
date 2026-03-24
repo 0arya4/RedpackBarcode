@@ -127,6 +127,10 @@ function setupForms() {
   document.getElementById('post-form').addEventListener('submit', handlePostFormSubmit);
   document.getElementById('driver-form').addEventListener('submit', handleDriverFormSubmit);
   document.getElementById('add-driver-btn').addEventListener('click', () => openDriverForm());
+
+  document.getElementById('df-is-supervisor').addEventListener('change', (e) => {
+    document.getElementById('df-supervisor-section').style.display = e.target.checked ? 'block' : 'none';
+  });
 }
 
 function openPostForm(barcode, prefill = null, existingPost = null) {
@@ -465,6 +469,7 @@ function renderDriverList() {
         <div class="driver-name">
           ${Utils.escapeHtml(d.name)}
           <span class="${d.active ? 'active-dot' : 'active-dot inactive-dot'}"></span>
+          ${d.supervisorOf?.length ? `<span class="badge badge-info" style="font-size:0.68rem;padding:2px 6px;">👁️ سەرپەرشتیار</span>` : ''}
         </div>
         <div class="driver-email">${Utils.escapeHtml(d.email)}</div>
       </div>
@@ -506,6 +511,28 @@ function openDriverForm(uid = null) {
     pwInput.required = true;
   }
 
+  // Supervisor section
+  const existingSupervisorOf = driver?.supervisorOf || [];
+  const isSupervisor = existingSupervisorOf.length > 0;
+  document.getElementById('df-is-supervisor').checked = isSupervisor;
+  document.getElementById('df-supervisor-section').style.display = isSupervisor ? 'block' : 'none';
+
+  // Populate driver checkboxes (all active drivers except the one being edited)
+  const checkboxContainer = document.getElementById('df-driver-checkboxes');
+  const otherDrivers = allDrivers.filter(d => d.uid !== uid && d.active);
+  if (otherDrivers.length === 0) {
+    checkboxContainer.innerHTML = '<div style="font-size:0.82rem;color:var(--text-muted);padding:4px;">هیچ سایەقێکی تر نییە</div>';
+  } else {
+    checkboxContainer.innerHTML = otherDrivers.map(d => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;border-radius:6px;">
+        <input type="checkbox" value="${d.uid}" class="supervisor-driver-cb"
+          ${existingSupervisorOf.includes(d.uid) ? 'checked' : ''}
+          style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary);" />
+        <span style="font-size:0.88rem;">${Utils.escapeHtml(d.name)}</span>
+      </label>
+    `).join('');
+  }
+
   Utils.openModal('modal-driver-form');
 }
 
@@ -518,16 +545,22 @@ async function handleDriverFormSubmit(e) {
   const isEdit   = !!uid;
   const btn      = document.getElementById('df-submit-btn');
 
+  // Read supervisor data
+  const isSupervisor = document.getElementById('df-is-supervisor').checked;
+  const supervisorOf = isSupervisor
+    ? [...document.querySelectorAll('.supervisor-driver-cb:checked')].map(cb => cb.value)
+    : [];
+
   btn.disabled = true;
   Utils.showLoading(true);
 
   try {
     if (isEdit) {
-      await Auth.updateDriver(uid, { name, email });
+      await Auth.updateDriver(uid, { name, email, supervisorOf });
       Utils.showToast('سایەق نوێکرایەوە ✓', 'success');
     } else {
       if (password.length < 6) throw new Error('پاسوۆرد کەمترین 6 پیت دەبێت.');
-      await Auth.createDriverAccount(email, password, name);
+      await Auth.createDriverAccount(email, password, name, supervisorOf);
       Utils.showToast('سایەقی نوێ زیادکرا ✓', 'success');
     }
     await loadDrivers();

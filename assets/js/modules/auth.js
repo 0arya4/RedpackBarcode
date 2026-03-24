@@ -5,9 +5,15 @@
 
 const Auth = {
 
-  // Login with email and password
+  // Convert phone number or email to valid email format
+  normalizeEmail(input) {
+    const v = input.trim();
+    return v.includes('@') ? v : v + '@redpack.app';
+  },
+
+  // Login with email/phone and password
   async login(email, password) {
-    const credential = await auth.signInWithEmailAndPassword(email, password);
+    const credential = await auth.signInWithEmailAndPassword(this.normalizeEmail(email), password);
     const userData = await this.getUserData(credential.user.uid);
     if (!userData) throw new Error('User record not found in database.');
     if (!userData.active) throw new Error('This account has been deactivated.');
@@ -32,17 +38,19 @@ const Auth = {
   },
 
   // Create a driver account (uses secondary app to avoid logging out admin)
-  async createDriverAccount(email, password, name) {
-    const credential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+  async createDriverAccount(email, password, name, supervisorOf = []) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const credential = await secondaryAuth.createUserWithEmailAndPassword(normalizedEmail, password);
     const uid = credential.user.uid;
 
     // Save driver data to Firestore
     await db.collection('Users').doc(uid).set({
       uid,
       name,
-      email,
+      email: normalizedEmail,
       role: 'driver',
       active: true,
+      supervisorOf,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 

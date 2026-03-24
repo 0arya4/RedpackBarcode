@@ -6,6 +6,8 @@ let currentDriverUser = null;
 let currentTab = 'uncollected';
 let driverPostsCache = { uncollected: [], withme: [], completed: [] };
 let pendingPhotoPostId = null;
+let isSupervisorMode = false;
+let supervisorDriverIds = [];
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -13,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { userData } = await Auth.requireRole('driver');
     currentDriverUser = userData;
     document.getElementById('driver-name').textContent = userData.name || 'سایەق';
+
+    isSupervisorMode = !!(userData.supervisorOf?.length);
+    supervisorDriverIds = userData.supervisorOf || [];
 
     setupNavigation();
     setupScanner();
@@ -85,42 +90,41 @@ async function handleDriverScan(barcodeValue) {
   Utils.closeModal('modal-driver-scanner');
   Utils.showLoading(true);
 
+  const allIds = [currentDriverUser.uid, ...supervisorDriverIds];
+
   try {
-    // Find post with this barcode assigned to this driver with status "ready"
-    const snapshot = await db.collection('posts')
+    // Fetch by barcode only, filter client-side to avoid composite index
+    const anySnapshot = await db.collection('posts')
       .where('barcode', '==', barcodeValue)
-      .where('driverId', '==', currentDriverUser.uid)
-      .where('status', '==', 'ready')
-      .limit(1)
       .get();
 
-    if (snapshot.empty) {
-      // Check if it exists but is wrong status or wrong driver
-      const anySnapshot = await db.collection('posts')
-        .where('barcode', '==', barcodeValue)
-        .limit(1)
-        .get();
+    if (anySnapshot.empty) {
+      Utils.showToast('ئەم باڕکۆدە لە سیستەمدا نییە', 'error');
+      return;
+    }
 
-      if (anySnapshot.empty) {
-        Utils.showToast('ئەم باڕکۆدە لە سیستەمدا نییە', 'error');
+    // Find a matching post: must belong to our scope AND be ready
+    const matchDoc = anySnapshot.docs.find(doc => {
+      const d = doc.data();
+      return allIds.includes(d.driverId) && d.status === 'ready';
+    });
+
+    if (!matchDoc) {
+      const post = anySnapshot.docs[0].data();
+      if (!allIds.includes(post.driverId)) {
+        Utils.showToast('ئەم پۆستە بۆ سایەقی تر دیاریکراوە', 'error');
+      } else if (post.status === 'with_driver') {
+        Utils.showToast('ئەم پۆستە پێشتر باڕکۆدکراوە', 'error');
+      } else if (post.status === 'completed') {
+        Utils.showToast('ئەم پۆستە تەواوبووە', 'error');
       } else {
-        const post = anySnapshot.docs[0].data();
-        if (post.driverId !== currentDriverUser.uid) {
-          Utils.showToast('ئەم پۆستە بۆ سایەقی تر دیاریکراوە', 'error');
-        } else if (post.status === 'with_driver') {
-          Utils.showToast('ئەم پۆستە پێشتر باڕکۆدکراوە', 'error');
-        } else if (post.status === 'completed') {
-          Utils.showToast('ئەم پۆستە تەواوبووە', 'error');
-        } else {
-          Utils.showToast('باڕکۆد نەدۆزرایەوە', 'error');
-        }
+        Utils.showToast('باڕکۆد نەدۆزرایەوە', 'error');
       }
       return;
     }
 
-    const docRef = snapshot.docs[0].ref;
-    const postId = snapshot.docs[0].id;
-    await docRef.update({
+    const postId = matchDoc.id;
+    await matchDoc.ref.update({
       status:          'with_driver',
       driverScannedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -237,40 +241,46 @@ async function completePost(postId) {
 
 // ── Real-time Listeners ──────────────────────────────────────
 function startRealtimeListeners() {
-  const driverId = currentDriverUser.uid;
+  const myId = currentDriverUser.uid;
+  const allIds = [myId, ...supervisorDriverIds];
 
-  // Listen to all posts for this driver — sort client-side to avoid index requirement
-  db.collection('posts')
-    .where('driverId', '==', driverId)
-    .onSnapshot(snapshot => {
-      const posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  // Build query — use 'in' for supervisor, '==' for regular driver
+  let query = db.collection('posts');
+  if (allIds.length === 1) {
+    query = query.where('driverId', '==', myId);
+  } else {
+    query = query.where('driverId', 'in', allIds);
+  }
 
-      const uncollected = posts
-        .filter(p => p.status === 'ready')
-        .sort((a, b) => (b.adminScannedAt?.toMillis?.() || 0) - (a.adminScannedAt?.toMillis?.() || 0));
+  query.onSnapshot(snapshot => {
+    const posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      const withMe = posts
-        .filter(p => p.status === 'with_driver')
-        .sort((a, b) => (b.driverScannedAt?.toMillis?.() || 0) - (a.driverScannedAt?.toMillis?.() || 0));
+    const uncollected = posts
+      .filter(p => p.status === 'ready')
+      .sort((a, b) => (b.adminScannedAt?.toMillis?.() || 0) - (a.adminScannedAt?.toMillis?.() || 0));
 
-      const completed = posts
-        .filter(p => p.status === 'completed')
-        .sort((a, b) => (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0));
+    const withMe = posts
+      .filter(p => p.status === 'with_driver')
+      .sort((a, b) => (b.driverScannedAt?.toMillis?.() || 0) - (a.driverScannedAt?.toMillis?.() || 0));
 
-      driverPostsCache.uncollected = uncollected;
-      driverPostsCache.withme      = withMe;
-      driverPostsCache.completed   = completed;
+    const completed = posts
+      .filter(p => p.status === 'completed')
+      .sort((a, b) => (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0));
 
-      renderDriverList('list-uncollected', uncollected, 'uncollected');
-      updateBadge('badge-uncollected', uncollected.length);
+    driverPostsCache.uncollected = uncollected;
+    driverPostsCache.withme      = withMe;
+    driverPostsCache.completed   = completed;
 
-      renderDriverList('list-withme', withMe, 'withme');
-      updateBadge('badge-withme', withMe.length);
-      const completeAllBtn = document.getElementById('complete-all-btn');
-      if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
+    renderDriverList('list-uncollected', uncollected, 'uncollected');
+    updateBadge('badge-uncollected', uncollected.length);
 
-      renderDriverList('list-completed', completed, 'completed');
-    });
+    renderDriverList('list-withme', withMe, 'withme');
+    updateBadge('badge-withme', withMe.length);
+    const completeAllBtn = document.getElementById('complete-all-btn');
+    if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
+
+    renderDriverList('list-completed', completed, 'completed');
+  });
 }
 
 function updateBadge(badgeId, count) {
@@ -323,11 +333,15 @@ function renderDriverPostCard(post, section) {
       </button>
     </div>` : '';
 
+  const driverTag = isSupervisorMode
+    ? `<span style="font-size:0.72rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:10px;margin-right:4px;">${Utils.escapeHtml(post.driverName)}</span>`
+    : '';
+
   return `
     <div class="post-card status-${post.status}" onclick="this.classList.toggle('expanded')">
       <div class="post-card-summary">
         <div class="post-summary-main">
-          <div class="post-summary-barcode">#${Utils.escapeHtml(post.barcode)}</div>
+          <div class="post-summary-barcode">${driverTag}#${Utils.escapeHtml(post.barcode)}</div>
           <div class="post-summary-sub">${Utils.escapeHtml(post.clientName)} · ${Utils.escapeHtml(post.address)}</div>
         </div>
         <span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>

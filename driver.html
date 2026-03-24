@@ -18,8 +18,9 @@
       <div class="logo-icon">RP</div>
       RED PACK
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
       <span class="user-info" id="driver-name">سایەق</span>
+      <button class="btn-logout" id="theme-toggle" onclick="toggleTheme()" style="font-size:1.1rem;padding:5px 8px;">🌙</button>
       <button class="btn-logout" onclick="Auth.logout()">چوونەدەرەوە</button>
     </div>
   </header>
@@ -132,6 +133,16 @@
 <script src="assets/js/modules/auth.js"></script>
 <script src="assets/js/modules/barcode.js"></script>
 <script src="assets/js/pages/driver.js"></script>
+<script>
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+  Utils.initTheme();
+</script>
 
 </body>
 </html>

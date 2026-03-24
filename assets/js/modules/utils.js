@@ -105,6 +105,14 @@ const Utils = {
     });
   },
 
+  // Initialize theme from saved preference
+  initTheme() {
+    const saved = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+  },
+
   // Show a prominent top banner (for scan success)
   showBanner(message) {
     const existing = document.getElementById('success-banner');
