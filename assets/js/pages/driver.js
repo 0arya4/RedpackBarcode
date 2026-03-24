@@ -8,6 +8,7 @@ let driverPostsCache = { uncollected: [], withme: [], completed: [] };
 let pendingPhotoPostId = null;
 let isSupervisorMode = false;
 let supervisorDriverIds = [];
+let supervisorDriverFilter = ''; // selected driverId filter for supervisor
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupScanner();
     setupPhotoCapture();
     setupSearch();
+    if (isSupervisorMode) setupSupervisorFilter();
     startRealtimeListeners();
   } catch (e) {
     console.error('Driver init failed:', e);
@@ -63,6 +65,48 @@ function setupSearch() {
       renderDriverList(`list-${section}`, filtered, section);
     });
   });
+}
+
+// ── Supervisor Driver Filter ──────────────────────────────────
+async function setupSupervisorFilter() {
+  const bar = document.getElementById('supervisor-filter-bar');
+  const sel = document.getElementById('supervisor-driver-filter');
+  if (!bar || !sel) return;
+
+  bar.style.display = 'block';
+
+  // Load names for supervised driver UIDs
+  const allIds = [currentDriverUser.uid, ...supervisorDriverIds];
+  const snap = await db.collection('Users')
+    .where('role', '==', 'driver')
+    .get();
+
+  sel.innerHTML = '<option value="">هەموو سایەقەکان</option>';
+  snap.docs
+    .filter(d => allIds.includes(d.id))
+    .forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.data().name;
+      sel.appendChild(opt);
+    });
+
+  sel.addEventListener('change', () => {
+    supervisorDriverFilter = sel.value;
+    renderAllFromCache();
+  });
+}
+
+function renderAllFromCache() {
+  const filter = supervisorDriverFilter;
+
+  const filterPosts = posts => filter
+    ? posts.filter(p => p.driverId === filter)
+    : posts;
+
+  renderDriverList('list-uncollected', filterPosts(driverPostsCache.uncollected), 'uncollected');
+  renderDriverList('list-withme',      filterPosts(driverPostsCache.withme),      'withme');
+  renderDriverList('list-completed',   filterPosts(driverPostsCache.completed),   'completed');
 }
 
 // ── Barcode Scanner ──────────────────────────────────────────
@@ -271,15 +315,20 @@ function startRealtimeListeners() {
     driverPostsCache.withme      = withMe;
     driverPostsCache.completed   = completed;
 
-    renderDriverList('list-uncollected', uncollected, 'uncollected');
+    // Badges always reflect total counts (unfiltered)
     updateBadge('badge-uncollected', uncollected.length);
-
-    renderDriverList('list-withme', withMe, 'withme');
     updateBadge('badge-withme', withMe.length);
     const completeAllBtn = document.getElementById('complete-all-btn');
     if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
 
-    renderDriverList('list-completed', completed, 'completed');
+    // Render with active supervisor filter if set
+    const applyFilter = posts => (isSupervisorMode && supervisorDriverFilter)
+      ? posts.filter(p => p.driverId === supervisorDriverFilter)
+      : posts;
+
+    renderDriverList('list-uncollected', applyFilter(uncollected), 'uncollected');
+    renderDriverList('list-withme',      applyFilter(withMe),      'withme');
+    renderDriverList('list-completed',   applyFilter(completed),   'completed');
   });
 }
 
