@@ -592,7 +592,7 @@ function setupPhotoCapture() {
   });
 }
 
-function compressImage(file, maxWidth = 1200, quality = 0.75) {
+function compressImage(file, maxWidth = 800, quality = 0.65) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onerror = () => resolve(file);
@@ -606,7 +606,12 @@ function compressImage(file, maxWidth = 1200, quality = 0.75) {
           canvas.width  = Math.round(img.width  * ratio);
           canvas.height = Math.round(img.height * ratio);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality);
+          // toDataURL is synchronous — never hangs unlike toBlob
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const bytes   = atob(dataUrl.split(',')[1]);
+          const arr     = new Uint8Array(bytes.length);
+          for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+          resolve(new Blob([arr], { type: 'image/jpeg' }));
         } catch (_) {
           resolve(file);
         }
