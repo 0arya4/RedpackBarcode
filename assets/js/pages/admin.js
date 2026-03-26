@@ -4,7 +4,7 @@
 
 let currentAdminUser = null;
 let allDrivers = [];
-let currentDriverFilter = '';
+let currentDriverFilter = []; // array of selected driver UIDs (empty = all)
 let currentSubTab = 'ready';
 let postListeners = {};
 let currentSearchQuery = '';
@@ -46,7 +46,10 @@ function switchTab(tabName) {
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
   const fab = document.getElementById('admin-scan-btn');
-  if (fab) fab.style.display = tabName === 'home' ? 'flex' : 'none';
+  const mini = document.getElementById('admin-manual-btn');
+  const show = tabName === 'home' ? 'flex' : 'none';
+  if (fab) fab.style.display = show;
+  if (mini) mini.style.display = show;
 
   if (tabName === 'stats') loadStats();
 }
@@ -55,11 +58,6 @@ function switchTab(tabName) {
 function setupSubTabs() {
   document.querySelectorAll('.sub-tab[data-subtab]').forEach(btn => {
     btn.addEventListener('click', () => switchSubTab(btn.dataset.subtab));
-  });
-
-  document.getElementById('driver-filter').addEventListener('change', (e) => {
-    currentDriverFilter = e.target.value;
-    renderAllSections(allPostsCache);
   });
 
   document.getElementById('post-search').addEventListener('input', (e) => {
@@ -75,12 +73,31 @@ function switchSubTab(name) {
 
   document.querySelector(`.sub-tab[data-subtab="${name}"]`).classList.add('active');
   document.getElementById(`subtab-${name}`).style.display = 'block';
+
+  // Update count for newly visible tab
+  renderAllSections(allPostsCache);
 }
 
 // ── Barcode Scanner Modal ────────────────────────────────────
 function setupScannerModal() {
   document.getElementById('admin-scan-btn').addEventListener('click', openScanner);
   document.getElementById('scanner-close-btn').addEventListener('click', closeScanner);
+  document.getElementById('admin-manual-btn').addEventListener('click', () => {
+    document.getElementById('admin-manual-input').value = '';
+    const overlay = document.getElementById('admin-manual-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('admin-manual-input').focus(), 100);
+  });
+  document.getElementById('admin-manual-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitAdminManual();
+  });
+}
+
+async function submitAdminManual() {
+  const val = document.getElementById('admin-manual-input').value.trim();
+  if (!val) return;
+  document.getElementById('admin-manual-overlay').style.display = 'none';
+  await handleAdminScan(val);
 }
 
 async function openScanner() {
@@ -108,7 +125,12 @@ async function handleAdminScan(barcodeValue) {
     .get();
 
   if (!existing.empty) {
-    Utils.showToast(`باڕکۆد #${barcodeValue} پێشتر تۆمارکراوە.`, 'error');
+    const post = existing.docs[0].data();
+    if (post.status === 'with_driver' || post.status === 'completed') {
+      Utils.showToast(`پێشتر سایەق باڕکۆدی کردووە — لای سایەقە #${barcodeValue}`, 'error');
+    } else {
+      Utils.showToast(`باڕکۆد #${barcodeValue} پێشتر تۆمارکراوە.`, 'error');
+    }
     return;
   }
 
@@ -240,6 +262,7 @@ function startRealtimeListeners() {
       updateCountsAndBadges(posts);
       renderAllSections(posts);
       renderHomeSummary(posts);
+      cleanupOldCompleted(posts);
     });
 }
 
@@ -270,23 +293,40 @@ function updateCountsAndBadges(posts) {
 }
 
 function renderAllSections(posts) {
+  const counts = {};
   ['ready', 'with_driver', 'completed'].forEach(status => {
     let filtered = posts.filter(p => p.status === status);
-    if (currentDriverFilter) {
-      filtered = filtered.filter(p => p.driverId === currentDriverFilter);
+    if (currentDriverFilter.length) {
+      filtered = filtered.filter(p => currentDriverFilter.includes(p.driverId));
     }
     if (currentSearchQuery) {
       filtered = filtered.filter(p =>
         p.barcode?.toLowerCase().includes(currentSearchQuery)
       );
     }
+    // Put underReview posts first in with_driver list
+    if (status === 'with_driver') {
+      filtered.sort((a, b) => (b.underReview ? 1 : 0) - (a.underReview ? 1 : 0));
+    }
+    counts[status] = filtered.length;
     renderPostList(`list-${status}`, filtered, true);
   });
+
+  const countEl = document.getElementById('filter-post-count');
+  if (countEl) {
+    const isFiltered = currentDriverFilter.length || currentSearchQuery;
+    if (isFiltered) {
+      countEl.style.display = 'block';
+      countEl.textContent = `${counts[currentSubTab] ?? 0} پۆست دۆزرایەوە`;
+    } else {
+      countEl.style.display = 'none';
+    }
+  }
 }
 
 function renderHomeSummary(posts) {
   const recent = posts.slice(0, 5);
-  renderPostList('home-recent-posts', recent, false);
+  renderPostList('home-recent-posts', recent, true);
 }
 
 function renderPostList(containerId, posts, showActions) {
@@ -313,6 +353,9 @@ function renderPostList(containerId, posts, showActions) {
     el.querySelectorAll('.btn-delete-post').forEach(btn => {
       btn.addEventListener('click', () => deletePost(btn.dataset.id));
     });
+    el.querySelectorAll('.btn-check-post').forEach(btn => {
+      btn.addEventListener('click', () => checkPost(btn.dataset.id, btn.dataset.checked === 'true'));
+    });
   }
 }
 
@@ -328,19 +371,24 @@ function driverColor(driverId) {
 
 function renderPostCard(post, showActions) {
   const statusBadge = `<span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>`;
+  const checkBtn = (post.status === 'with_driver' && showActions)
+    ? `<button class="btn btn-sm btn-check-post" data-id="${post.id}" data-checked="${!!post.underReview}" onclick="event.stopPropagation()" style="background:${post.underReview ? '#C62828' : '#1565C0'};color:#fff;border:none;">🔍 ${post.underReview ? 'بەدواداچوون ✓' : 'بەدواداچوون'}</button>`
+    : '';
   const actions = showActions ? `
     <div class="post-card-footer">
       <button class="btn btn-outline btn-sm btn-edit-post" data-id="${post.id}" onclick="event.stopPropagation()">✏️ دەستکاری</button>
+      ${checkBtn}
       <button class="btn btn-danger btn-sm btn-delete-post" data-id="${post.id}" onclick="event.stopPropagation()">🗑️ سڕینەوە</button>
     </div>` : '';
 
   const bgColor = driverColor(post.driverId);
   return `
-    <div class="post-card status-${post.status}" style="background:${bgColor};" onclick="this.classList.toggle('expanded')">
+    <div class="post-card status-${post.status}${post.underReview ? ' under-review' : ''}" style="background:${bgColor};" onclick="this.classList.toggle('expanded')">
       <div class="post-card-summary">
         <div class="post-summary-main">
-          <div class="post-summary-barcode">#${Utils.escapeHtml(post.barcode)}</div>
+          <div class="post-summary-barcode" data-barcode="${Utils.escapeHtml(post.barcode)}">#${Utils.escapeHtml(post.barcode)}</div>
           <div class="post-summary-sub">${Utils.escapeHtml(post.driverName)} · ${Utils.escapeHtml(post.clientName)}</div>
+          ${post.underReview ? `<div style="color:#C62828;font-weight:700;font-size:0.78rem;margin-top:2px;">⚠️ ئەم پۆستە لەژێر بەدواداچووندایە</div>` : ''}
         </div>
         ${statusBadge}
         <span class="post-chevron">▼</span>
@@ -369,8 +417,8 @@ function renderPostCard(post, showActions) {
           </div>
           ${post.note ? `<div class="post-row"><span class="label">تێبینی:</span><span class="value">${Utils.escapeHtml(post.note)}</span></div>` : ''}
           <div class="post-row">
-            <span class="label"> کاتی باڕکۆدی ئۆفیس:</span>
-            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.adminScannedAt)}</span>
+            <span class="label">کاتی باڕکۆدی ئۆفیس:</span>
+            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${post.directDriverScan ? '⚠️ لە ئۆفیس باڕکۆد نەکراوە' : Utils.formatDate(post.adminScannedAt)}</span>
           </div>
           ${post.driverScannedAt ? `
           <div class="post-row">
@@ -378,7 +426,7 @@ function renderPostCard(post, showActions) {
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
           </div>` : ''}
         </div>
-        ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.directDriverScan ? `<div class="post-photo" style="background:var(--warning-bg,#FFF8E1);border:1px solid #FFD54F;border-radius:8px;padding:10px;font-size:0.8rem;color:#E65100;text-align:center;">⚠️ لە ئۆفیس باڕکۆد نەکراوە<br>یەکسەر سایەق باڕکۆدی کردووە</div>` : post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${actions}
       </div>
@@ -394,8 +442,34 @@ async function editPost(postId) {
   openPostForm(post.barcode, null, post);
 }
 
+async function cleanupOldCompleted(posts) {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  const batch = db.batch();
+  let changes = 0;
+
+  posts.forEach(p => {
+    const t = ts => ts?.toDate ? ts.toDate() : ts ? new Date(ts) : null;
+
+    // Auto-complete posts with_driver for over 24h (skip underReview posts)
+    if (p.status === 'with_driver' && !p.underReview && t(p.driverScannedAt) < cutoff) {
+      batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
+      changes++;
+    }
+
+    // Auto-delete completed posts older than 24h
+    if (p.status === 'completed' && t(p.completedAt) < cutoff) {
+      batch.delete(db.collection('posts').doc(p.id));
+      changes++;
+    }
+  });
+
+  if (changes) await batch.commit();
+}
+
 async function deleteAllCompleted() {
-  const posts = allPostsCache.filter(p => p.status === 'completed');
+  let posts = allPostsCache.filter(p => p.status === 'completed');
+  if (currentDriverFilter.length) posts = posts.filter(p => currentDriverFilter.includes(p.driverId));
   if (!posts.length) return;
 
   const confirmed = await Utils.confirm(`دڵنیایت لە سڕینەوەی هەموو ${posts.length} پۆستە تەواوبووەکان؟`);
@@ -426,6 +500,17 @@ async function deletePost(postId) {
   Utils.showLoading(false);
 }
 
+async function checkPost(postId, currentlyChecked) {
+  Utils.showLoading(true);
+  try {
+    await db.collection('posts').doc(postId).update({ underReview: !currentlyChecked });
+    Utils.showToast(!currentlyChecked ? 'پۆست لەژێر بەدواداچووندایە ✓' : 'بەدواداچوون لابرا', 'success');
+  } catch (err) {
+    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
+  }
+  Utils.showLoading(false);
+}
+
 function renderFilteredPosts() {
   db.collection('posts').orderBy('createdAt', 'desc').get().then(snapshot => {
     const posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -441,13 +526,10 @@ async function loadDrivers() {
 }
 
 function populateDriverFilter() {
-  const sel = document.getElementById('driver-filter');
-  sel.innerHTML = '<option value="">هەموو سایەقەکان</option>';
-  allDrivers.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.uid;
-    opt.textContent = d.name;
-    sel.appendChild(opt);
+  const options = allDrivers.map(d => ({ value: d.uid, label: d.name }));
+  Utils.buildMultiSelect('driver-filter', options, (selected) => {
+    currentDriverFilter = selected;
+    renderAllSections(allPostsCache);
   });
 }
 
@@ -503,12 +585,16 @@ function openDriverForm(uid = null) {
   // Password required only for new drivers
   const pwGroup = document.getElementById('df-password-group');
   const pwInput = document.getElementById('df-password');
+  const newPwGroup = document.getElementById('df-new-password-group');
+  document.getElementById('df-new-password').value = '';
   if (isEdit) {
     pwGroup.style.display = 'none';
     pwInput.required = false;
+    newPwGroup.style.display = 'block';
   } else {
     pwGroup.style.display = 'block';
     pwInput.required = true;
+    newPwGroup.style.display = 'none';
   }
 
   // Supervisor section
@@ -554,10 +640,17 @@ async function handleDriverFormSubmit(e) {
   btn.disabled = true;
   Utils.showLoading(true);
 
+  const newPassword = document.getElementById('df-new-password').value.trim();
+
   try {
     if (isEdit) {
-      await Auth.updateDriver(uid, { name, email, supervisorOf });
-      Utils.showToast('سایەق نوێکرایەوە ✓', 'success');
+      const updateData = { name, email, supervisorOf };
+      if (newPassword) {
+        if (newPassword.length < 6) throw new Error('پاسوۆرد کەمترین 6 پیت دەبێت.');
+        updateData.pendingPassword = newPassword;
+      }
+      await Auth.updateDriver(uid, updateData);
+      Utils.showToast('سایەق نوێکرایەوە ✓' + (newPassword ? ' — پاسوۆرد جارێکی تر چوونەژوورەوە دەگۆڕدرێت' : ''), 'success');
     } else {
       if (password.length < 6) throw new Error('پاسوۆرد کەمترین 6 پیت دەبێت.');
       await Auth.createDriverAccount(email, password, name, supervisorOf);

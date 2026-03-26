@@ -33,9 +33,8 @@
 
       <!-- Supervisor driver filter — only shown when supervisor mode -->
       <div id="supervisor-filter-bar" style="display:none;padding:8px 16px 0;">
-        <select class="form-select" id="supervisor-driver-filter" style="width:100%;">
-          <option value="">هەموو سایەقەکان</option>
-        </select>
+        <div id="supervisor-driver-filter"></div>
+        <div id="supervisor-post-count" style="display:none;font-size:0.82rem;color:var(--text-muted);text-align:center;padding:4px 0;"></div>
       </div>
 
       <!-- ══════════════ TAB: UNCOLLECTED ══════════════ -->
@@ -54,6 +53,9 @@
             style="margin:0;" />
         </div>
         <div style="padding: 8px 16px 0;">
+          <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:4px 8px;background:var(--bg);border-radius:8px;margin-bottom:6px;">
+            ⏱️ پۆستەکان دوای 24 کاتژمێر دەڕۆنە بەشی تەواوبوو
+          </div>
           <button class="btn btn-success btn-full" id="complete-all-btn" style="display:none;"
             onclick="completeAllPosts()">
             ✅ تەواوبوون لە هەمووی
@@ -77,6 +79,17 @@
     <button class="fab" id="driver-scan-fab">
       📷&nbsp;&nbsp;باڕکۆد بکە
     </button>
+    <button class="fab-mini" id="driver-manual-btn" title="ئایدی بنووسە">✏️</button>
+
+    <!-- Manual Barcode Overlay -->
+    <div id="driver-manual-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:var(--surface);border-radius:16px;padding:24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:1rem;font-weight:700;color:var(--text);text-align:center;">✏️ ئایدی باڕکۆد بنووسە</div>
+        <input type="number" id="driver-manual-input" class="form-input" placeholder="بۆ نموونە: 174483" dir="ltr" style="font-size:1.1rem;text-align:center;" />
+        <button onclick="submitDriverManual()" style="padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">پشتڕاستکردنەوە ✓</button>
+        <button onclick="document.getElementById('driver-manual-overlay').style.display='none'" style="padding:10px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;font-size:0.9rem;cursor:pointer;">داخستن</button>
+      </div>
+    </div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
@@ -146,6 +159,7 @@
   <script src="assets/js/modules/utils.js"></script>
   <script src="assets/js/modules/auth.js"></script>
   <script src="assets/js/modules/barcode.js"></script>
+  <script src="assets/js/modules/api.js"></script>
   <script src="assets/js/pages/driver.js"></script>
   <script>
     function toggleTheme() {

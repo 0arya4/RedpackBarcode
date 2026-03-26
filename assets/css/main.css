@@ -334,6 +334,11 @@ p  { font-size: 0.95rem; line-height: 1.6; }
 .post-card.status-with_driver { border-top-color: var(--info); }
 .post-card.status-completed   { border-top-color: var(--success); }
 
+.post-card.under-review {
+  border-top-color: #C62828;
+  box-shadow: 0 0 0 2px rgba(198,40,40,0.25), 0 0 18px 4px rgba(255,255,255,0.55);
+}
+
 /* Collapsed summary row */
 .post-card-summary {
   padding: 11px 14px;
@@ -348,9 +353,11 @@ p  { font-size: 0.95rem; line-height: 1.6; }
 .post-summary-barcode {
   font-weight: 700;
   font-size: 0.9rem;
-  font-family: monospace;
-  letter-spacing: 1px;
+  font-family: inherit;
+  letter-spacing: 0;
   color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
 }
 .post-summary-sub {
   font-size: 0.78rem;
@@ -515,6 +522,30 @@ p  { font-size: 0.95rem; line-height: 1.6; }
 }
 
 .fab:active { transform: translateX(-50%) scale(0.97); box-shadow: var(--shadow-sm); }
+
+.fab-mini {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 20px);
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  transition: all var(--transition);
+}
+.fab-mini:active { transform: scale(0.93); }
+@media (min-width: 480px) {
+  .fab-mini { left: calc(50% - 224px); }
+}
 
 /* --- Badges --- */
 .badge {

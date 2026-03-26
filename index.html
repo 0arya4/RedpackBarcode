@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ckb" dir="rtl">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
@@ -10,14 +11,15 @@
   <link rel="stylesheet" href="assets/css/main.css" />
   <link rel="stylesheet" href="assets/css/auth.css" />
 </head>
+
 <body class="auth-page">
 
   <div class="auth-container">
 
     <!-- Logo -->
     <div class="auth-logo">
-      <div class="auth-logo-box">RP</div>
-      <h1>RED PACK</h1>
+      <div class="auth-logo-box">RP-C</div>
+      <h1>RED PACK BARCODE</h1>
       <p>بۆ گەیاندنی خێرا</p>
     </div>
 
@@ -30,28 +32,14 @@
       <form id="login-form">
         <div class="form-group">
           <label class="form-label" for="email">ئیمەیڵ یان ژمارەی مۆبایل</label>
-          <input
-            class="form-input"
-            type="text"
-            id="email"
-            placeholder="name@example.com یان 07501234567"
-            autocomplete="username"
-            required
-            dir="ltr"
-          />
+          <input class="form-input" type="text" id="email" placeholder="name@example.com یان 07501234567"
+            autocomplete="username" required dir="ltr" />
         </div>
 
         <div class="form-group">
           <label class="form-label" for="password">پاسوۆرد</label>
-          <input
-            class="form-input"
-            type="password"
-            id="password"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-            dir="ltr"
-          />
+          <input class="form-input" type="password" id="password" placeholder="••••••••" autocomplete="current-password"
+            required dir="ltr" />
         </div>
 
         <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
@@ -60,7 +48,7 @@
       </form>
     </div>
 
-    <div class="auth-footer">Red Pack Company © 2026</div>
+    <div class="auth-footer">Developed by <small>Arya Kawa</small></div>
   </div>
 
   <!-- Loading Overlay -->
@@ -84,7 +72,7 @@
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         const userData = await Auth.getUserData(user.uid);
-        if (userData?.role === 'admin')  return window.location.href = 'admin.html';
+        if (userData?.role === 'admin') return window.location.href = 'admin.html';
         if (userData?.role === 'driver') return window.location.href = 'driver.html';
       }
     });
@@ -92,10 +80,10 @@
     // Login form submit
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email    = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const errorEl  = document.getElementById('auth-error');
-      const btn      = document.getElementById('login-btn');
+      const errorEl = document.getElementById('auth-error');
+      const btn = document.getElementById('login-btn');
 
       errorEl.classList.remove('show');
       btn.disabled = true;
@@ -104,7 +92,7 @@
 
       try {
         const { userData } = await Auth.login(email, password);
-        if (userData.role === 'admin')  window.location.href = 'admin.html';
+        if (userData.role === 'admin') window.location.href = 'admin.html';
         else if (userData.role === 'driver') window.location.href = 'driver.html';
         else throw new Error('ڕۆڵی ئەم ئەکاونتە دیاری نییە.');
       } catch (err) {
@@ -125,4 +113,5 @@
     });
   </script>
 </body>
+
 </html>

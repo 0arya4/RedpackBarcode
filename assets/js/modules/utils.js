@@ -166,6 +166,81 @@ const Utils = {
     return labels[status] || status;
   },
 
+  // Build a custom multi-select dropdown inside a container element
+  // options: [{value, label}], onChange(selectedValues[])
+  buildMultiSelect(containerId, options, onChange, placeholder = 'هەموو سایەقەکان') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let selected = [];
+    let open = false;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:100%;';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);text-align:right;cursor:pointer;font-size:0.88rem;display:flex;justify-content:space-between;align-items:center;';
+
+    const dropdown = document.createElement('div');
+    dropdown.style.cssText = 'display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:500;max-height:220px;overflow-y:auto;';
+
+    function updateBtn() {
+      const label = selected.length === 0
+        ? placeholder
+        : `${selected.length} سایەق هەڵبژێردراون`;
+      btn.innerHTML = `<span>${label}</span><span>▾</span>`;
+    }
+
+    function buildOptions() {
+      dropdown.innerHTML = '';
+      options.forEach(opt => {
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:0.88rem;border-bottom:1px solid var(--border);';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = opt.value;
+        cb.checked = selected.includes(opt.value);
+        cb.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--primary);flex-shrink:0;';
+        cb.addEventListener('change', (e) => {
+          e.stopPropagation();
+          if (cb.checked) selected.push(opt.value);
+          else selected = selected.filter(v => v !== opt.value);
+          updateBtn();
+          onChange([...selected]);
+        });
+        const span = document.createElement('span');
+        span.textContent = opt.label;
+        row.appendChild(cb);
+        row.appendChild(span);
+        row.addEventListener('click', (e) => e.stopPropagation());
+        dropdown.appendChild(row);
+      });
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      open = !open;
+      dropdown.style.display = open ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', () => {
+      if (open) { open = false; dropdown.style.display = 'none'; }
+    });
+
+    buildOptions();
+    updateBtn();
+    wrap.appendChild(btn);
+    wrap.appendChild(dropdown);
+    container.innerHTML = '';
+    container.appendChild(wrap);
+
+    return {
+      refresh(newOptions) { options = newOptions; buildOptions(); },
+      getSelected() { return [...selected]; }
+    };
+  },
+
   // Get status CSS class
   statusClass(status) {
     const classes = {
@@ -176,3 +251,43 @@ const Utils = {
     return classes[status] || '';
   }
 };
+
+// ── Long-press to copy barcode ────────────────────────────────
+(function () {
+  let pressTimer = null;
+  let didCopy = false;
+
+  document.addEventListener('touchstart', (e) => {
+    const el = e.target.closest('[data-barcode]');
+    if (!el) return;
+    didCopy = false;
+    pressTimer = setTimeout(() => {
+      didCopy = true;
+      const barcode = el.dataset.barcode;
+      navigator.clipboard.writeText(barcode).then(() => {
+        Utils.showToast('کۆپی کرا ✓', 'success');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = barcode;
+        ta.style.cssText = 'position:fixed;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        Utils.showToast('کۆپی کرا ✓', 'success');
+      });
+    }, 600);
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => clearTimeout(pressTimer), { passive: true });
+  document.addEventListener('touchmove', () => { clearTimeout(pressTimer); didCopy = false; }, { passive: true });
+  document.addEventListener('touchcancel', () => { clearTimeout(pressTimer); didCopy = false; }, { passive: true });
+
+  // Block the card expand click that fires right after a long-press copy
+  document.addEventListener('click', (e) => {
+    if (didCopy && e.target.closest('[data-barcode]')) {
+      e.stopPropagation();
+      didCopy = false;
+    }
+  }, true);
+})();

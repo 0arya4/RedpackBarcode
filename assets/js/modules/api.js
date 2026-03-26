@@ -34,16 +34,16 @@ const RedPackAPI = {
       // Normalize API response to our internal format
       // Update these field mappings once you have the actual API response structure
       return {
-        barcode:       data.id          || barcodeId,
-        driverName:    data.driver_name || data.driverName || '',
+        barcode: data.id || barcodeId,
+        driverName: data.driver_name || data.driverName || '',
         receiverPhone: data.receiver_phone || data.receiverPhone || '',
-        price:         data.price        || 0,
-        quantity:      data.quantity     || 1,
-        clientName:    data.client_name  || data.clientName || '',
-        clientPhone:   data.client_phone || data.clientPhone || '',
-        address:       data.address      || '',
-        note:          data.note         || '',
-        date:          data.date         || ''
+        price: data.price || 0,
+        quantity: data.quantity || 1,
+        clientName: data.client_name || data.clientName || '',
+        clientPhone: data.client_phone || data.clientPhone || '',
+        address: data.address || '',
+        note: data.note || '',
+        date: data.date || ''
       };
     } catch (err) {
       console.error('[RedPackAPI] Request failed:', err);

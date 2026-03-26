@@ -8,14 +8,24 @@ let driverPostsCache = { uncollected: [], withme: [], completed: [] };
 let pendingPhotoPostId = null;
 let isSupervisorMode = false;
 let supervisorDriverIds = [];
-let supervisorDriverFilter = ''; // selected driverId filter for supervisor
+let supervisorDriverFilter = []; // selected driverIds for supervisor filter (empty = all)
 
 // ── Init ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const { userData } = await Auth.requireRole('driver');
+    const { user, userData } = await Auth.requireRole('driver');
     currentDriverUser = userData;
     document.getElementById('driver-name').textContent = userData.name || 'سایەق';
+
+    // Apply pending password reset set by admin
+    if (userData.pendingPassword) {
+      try {
+        await user.updatePassword(userData.pendingPassword);
+        await db.collection('Users').doc(user.uid).update({ pendingPassword: firebase.firestore.FieldValue.delete() });
+      } catch (e) {
+        console.warn('Password update failed:', e);
+      }
+    }
 
     isSupervisorMode = !!(userData.supervisorOf?.length);
     supervisorDriverIds = userData.supervisorOf || [];
@@ -47,9 +57,14 @@ function switchTab(tabName) {
   document.querySelector(`.nav-item[data-tab="${tabName}"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
-  // Hide FAB on completed tab
+  // Hide FAB + mini button on completed tab
   const fab = document.getElementById('driver-scan-fab');
-  fab.style.display = tabName === 'uncollected' ? 'flex' : 'none';
+  const mini = document.getElementById('driver-manual-btn');
+  const show = tabName === 'uncollected' ? 'flex' : 'none';
+  fab.style.display = show;
+  mini.style.display = show;
+
+  if (isSupervisorMode) renderAllFromCache();
 }
 
 // ── Search ───────────────────────────────────────────────────
@@ -70,49 +85,68 @@ function setupSearch() {
 // ── Supervisor Driver Filter ──────────────────────────────────
 async function setupSupervisorFilter() {
   const bar = document.getElementById('supervisor-filter-bar');
-  const sel = document.getElementById('supervisor-driver-filter');
-  if (!bar || !sel) return;
+  if (!bar) return;
 
   bar.style.display = 'block';
 
-  // Load names for supervised driver UIDs
   const allIds = [currentDriverUser.uid, ...supervisorDriverIds];
-  const snap = await db.collection('Users')
-    .where('role', '==', 'driver')
-    .get();
+  const snap = await db.collection('Users').where('role', '==', 'driver').get();
 
-  sel.innerHTML = '<option value="">هەموو سایەقەکان</option>';
-  snap.docs
+  const options = snap.docs
     .filter(d => allIds.includes(d.id))
-    .forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.data().name;
-      sel.appendChild(opt);
-    });
+    .map(d => ({ value: d.id, label: d.data().name }));
 
-  sel.addEventListener('change', () => {
-    supervisorDriverFilter = sel.value;
+  Utils.buildMultiSelect('supervisor-driver-filter', options, (selected) => {
+    supervisorDriverFilter = selected;
     renderAllFromCache();
   });
 }
 
 function renderAllFromCache() {
-  const filter = supervisorDriverFilter;
-
-  const filterPosts = posts => filter
-    ? posts.filter(p => p.driverId === filter)
+  const filterPosts = posts => supervisorDriverFilter.length
+    ? posts.filter(p => supervisorDriverFilter.includes(p.driverId))
     : posts;
 
-  renderDriverList('list-uncollected', filterPosts(driverPostsCache.uncollected), 'uncollected');
-  renderDriverList('list-withme', filterPosts(driverPostsCache.withme), 'withme');
-  renderDriverList('list-completed', filterPosts(driverPostsCache.completed), 'completed');
+  const fu = filterPosts(driverPostsCache.uncollected);
+  const fw = filterPosts(driverPostsCache.withme);
+  const fc = filterPosts(driverPostsCache.completed);
+
+  renderDriverList('list-uncollected', fu, 'uncollected');
+  renderDriverList('list-withme',      fw, 'withme');
+  renderDriverList('list-completed',   fc, 'completed');
+
+  const countEl = document.getElementById('supervisor-post-count');
+  if (countEl) {
+    if (supervisorDriverFilter.length) {
+      countEl.style.display = 'block';
+      const visibleCount = currentTab === 'uncollected' ? fu.length : currentTab === 'withme' ? fw.length : fc.length;
+      countEl.textContent = `${visibleCount} پۆست دۆزرایەوە`;
+    } else {
+      countEl.style.display = 'none';
+    }
+  }
 }
 
 // ── Barcode Scanner ──────────────────────────────────────────
 function setupScanner() {
   document.getElementById('driver-scan-fab').addEventListener('click', openDriverScanner);
   document.getElementById('driver-scanner-close').addEventListener('click', closeDriverScanner);
+  document.getElementById('driver-manual-btn').addEventListener('click', () => {
+    document.getElementById('driver-manual-input').value = '';
+    const overlay = document.getElementById('driver-manual-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => document.getElementById('driver-manual-input').focus(), 100);
+  });
+  document.getElementById('driver-manual-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitDriverManual();
+  });
+}
+
+async function submitDriverManual() {
+  const val = document.getElementById('driver-manual-input').value.trim();
+  if (!val) return;
+  document.getElementById('driver-manual-overlay').style.display = 'none';
+  await handleDriverScan(val);
 }
 
 async function openDriverScanner() {
@@ -143,7 +177,36 @@ async function handleDriverScan(barcodeValue) {
       .get();
 
     if (anySnapshot.empty) {
-      Utils.showToast('ئەم باڕکۆدە لە سیستەمدا نییە', 'error');
+      // No admin scan yet — verify barcode exists in Red Pack system via API
+      const prefill = await RedPackAPI.getOrderByBarcode(barcodeValue);
+      if (!prefill) {
+        Utils.showToast('ئەم باڕکۆدە لە سیستەمدا نییە', 'error');
+        return;
+      }
+      // API confirmed barcode is real — create post assigned to this driver
+      const newRef = db.collection('posts').doc();
+      await newRef.set({
+        barcode:          barcodeValue,
+        driverId:         currentDriverUser.uid,
+        driverName:       currentDriverUser.name,
+        status:           'with_driver',
+        directDriverScan: true,
+        photoAdmin:       null,
+        adminScannedAt:   null,
+        driverScannedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        completedAt:      null,
+        clientName:       prefill.clientName    || '',
+        clientPhone:      prefill.clientPhone   || '',
+        receiverPhone:    prefill.receiverPhone || '',
+        address:          prefill.address       || '',
+        price:            prefill.price         || 0,
+        quantity:         prefill.quantity      || 1,
+        note:             prefill.note          || '',
+        createdAt:        firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy:        'driver'
+      });
+      switchTab('withme');
+      openPhotoCaptureModal(newRef.id);
       return;
     }
 
@@ -244,7 +307,8 @@ function compressToBase64(file, maxWidth = 600, quality = 0.5) {
 
 // ── Complete all posts ───────────────────────────────────────
 async function completeAllPosts() {
-  const posts = driverPostsCache.withme;
+  let posts = driverPostsCache.withme.filter(p => !p.underReview);
+  if (supervisorDriverFilter.length) posts = posts.filter(p => supervisorDriverFilter.includes(p.driverId));
   if (!posts.length) return;
 
   const confirmed = await Utils.confirm(`دڵنیایت لە تەواوکردنی هەموو ${posts.length} پۆستەکان؟`);
@@ -267,6 +331,11 @@ async function completeAllPosts() {
 
 // ── Complete a post ──────────────────────────────────────────
 async function completePost(postId) {
+  const post = driverPostsCache.withme.find(p => p.id === postId);
+  if (post?.underReview) {
+    Utils.showToast('ئەم پۆستە لەژێر بەدواداچووندایە', 'error');
+    return;
+  }
   const confirmed = await Utils.confirm('دڵنیایت لە تەواوکردنی ئەم پۆستە؟');
   if (!confirmed) return;
 
@@ -305,7 +374,11 @@ function startRealtimeListeners() {
 
     const withMe = posts
       .filter(p => p.status === 'with_driver')
-      .sort((a, b) => (b.driverScannedAt?.toMillis?.() || 0) - (a.driverScannedAt?.toMillis?.() || 0));
+      .sort((a, b) => {
+        if (b.underReview && !a.underReview) return 1;
+        if (a.underReview && !b.underReview) return -1;
+        return (b.driverScannedAt?.toMillis?.() || 0) - (a.driverScannedAt?.toMillis?.() || 0);
+      });
 
     const completed = posts
       .filter(p => p.status === 'completed')
@@ -322,14 +395,30 @@ function startRealtimeListeners() {
     if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
 
     // Render with active supervisor filter if set
-    const applyFilter = posts => (isSupervisorMode && supervisorDriverFilter)
-      ? posts.filter(p => p.driverId === supervisorDriverFilter)
+    const applyFilter = posts => (isSupervisorMode && supervisorDriverFilter.length)
+      ? posts.filter(p => supervisorDriverFilter.includes(p.driverId))
       : posts;
 
     renderDriverList('list-uncollected', applyFilter(uncollected), 'uncollected');
     renderDriverList('list-withme', applyFilter(withMe), 'withme');
     renderDriverList('list-completed', applyFilter(completed), 'completed');
+
+    autoCompleteOldPosts(withMe);
   });
+}
+
+async function autoCompleteOldPosts(withMePosts) {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const old = withMePosts.filter(p => {
+    if (p.underReview) return false;
+    const t = p.driverScannedAt?.toDate ? p.driverScannedAt.toDate() : p.driverScannedAt ? new Date(p.driverScannedAt) : null;
+    return t && t < cutoff;
+  });
+  if (!old.length) return;
+  const batch = db.batch();
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  old.forEach(p => batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now }));
+  await batch.commit();
 }
 
 function updateBadge(badgeId, count) {
@@ -387,11 +476,12 @@ function renderDriverPostCard(post, section) {
     : '';
 
   return `
-    <div class="post-card status-${post.status}" onclick="this.classList.toggle('expanded')">
+    <div class="post-card status-${post.status}${post.underReview ? ' under-review' : ''}" onclick="this.classList.toggle('expanded')">
       <div class="post-card-summary">
         <div class="post-summary-main">
-          <div class="post-summary-barcode">${driverTag}#${Utils.escapeHtml(post.barcode)}</div>
+          <div class="post-summary-barcode" data-barcode="${Utils.escapeHtml(post.barcode)}">${driverTag}#${Utils.escapeHtml(post.barcode)}</div>
           <div class="post-summary-sub">${Utils.escapeHtml(post.clientName)} · ${Utils.escapeHtml(post.address)}</div>
+          ${post.underReview ? `<div style="color:#C62828;font-weight:700;font-size:0.78rem;margin-top:2px;">⚠️ ئەم پۆستە لەژێر چێک کردنەوەدایە</div>` : ''}
         </div>
         <span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>
         <span class="post-chevron">▼</span>

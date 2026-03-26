@@ -67,9 +67,8 @@
         <div class="filter-bar" style="flex-direction:column;gap:8px;">
           <input class="form-input" type="text" id="post-search" placeholder="🔍 گەڕان بە ژمارەی باڕکۆد..." dir="ltr"
             style="margin:0;" />
-          <select class="form-select" id="driver-filter" style="width:100%;">
-            <option value="">هەموو سایەقەکان</option>
-          </select>
+          <div id="driver-filter" style="width:100%;"></div>
+          <div id="filter-post-count" style="display:none;font-size:0.82rem;color:var(--text-muted);text-align:center;padding:2px 0;"></div>
         </div>
 
         <!-- Sub-tabs -->
@@ -90,10 +89,18 @@
           <div id="list-ready"></div>
         </div>
         <div id="subtab-with_driver" class="subtab-content" style="display:none;">
+          <div style="padding:8px 16px 0;">
+            <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:4px 8px;background:var(--bg);border-radius:8px;">
+              ⏱️ پۆستەکان دوای 24 کاتژمێر دەڕۆنە بەشی تەواوبوو
+            </div>
+          </div>
           <div id="list-with_driver"></div>
         </div>
         <div id="subtab-completed" class="subtab-content" style="display:none;">
-          <div style="padding:8px 16px 0;">
+          <div style="padding:8px 16px 0;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:4px 8px;background:var(--bg);border-radius:8px;">
+              ⏱️ پۆستە تەواوبووەکان دوای 24 کاتژمێر دەسڕێنەوە
+            </div>
             <button class="btn btn-danger btn-full" id="delete-all-completed-btn" style="display:none;"
               onclick="deleteAllCompleted()">
               🗑️ سڕینەوەی هەموو تەواوبووەکان
@@ -211,12 +218,12 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">کڵێنت / عمیل *</label>
+            <label class="form-label">کڵاینت / عمیل *</label>
             <input class="form-input" type="text" id="pf-client-name" placeholder="ناوی کڵێنت" required />
           </div>
 
           <div class="form-group">
-            <label class="form-label">مۆبایلی کڵێنت</label>
+            <label class="form-label">مۆبایلی کڵاینت</label>
             <input class="form-input" type="tel" id="pf-client-phone" placeholder="07XXXXXXXXX" dir="ltr" />
           </div>
 
@@ -270,6 +277,13 @@
             <input class="form-input" type="password" id="df-password" placeholder="کەمترین 6 پیت" dir="ltr" />
           </div>
 
+          <div class="form-group" id="df-new-password-group" style="display:none;">
+            <label class="form-label">پاسوۆردی نوێ <span style="font-weight:400;color:var(--text-muted);">(بەتاڵ بهێڵە
+                ئەگەر نەیدەگۆڕیت)</span></label>
+            <input class="form-input" type="password" id="df-new-password" placeholder="پاسوۆردی نوێ بنووسە"
+              dir="ltr" />
+          </div>
+
           <div class="form-group">
             <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:0.9rem;">
               <input type="checkbox" id="df-is-supervisor"
@@ -304,6 +318,23 @@
   <button class="fab" id="admin-scan-btn">
     📷&nbsp;&nbsp;باڕکۆد بکە
   </button>
+  <button class="fab-mini" id="admin-manual-btn" title="ئایدی بنووسە">✏️</button>
+
+  <!-- Manual Barcode Overlay -->
+  <div id="admin-manual-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surface);border-radius:16px;padding:24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:1rem;font-weight:700;color:var(--text);text-align:center;">✏️ ئایدی باڕکۆد بنووسە</div>
+      <input type="number" id="admin-manual-input" class="form-input" placeholder="بۆ نموونە: 174483" dir="ltr"
+        style="font-size:1.1rem;text-align:center;" />
+      <button onclick="submitAdminManual()"
+        style="padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">پشتڕاستکردنەوە
+        ✓</button>
+      <button onclick="document.getElementById('admin-manual-overlay').style.display='none'"
+        style="padding:10px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;font-size:0.9rem;cursor:pointer;">داخستن</button>
+    </div>
+  </div>
 
   <!-- Hidden photo input — triggered directly after scan -->
   <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
