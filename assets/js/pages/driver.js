@@ -368,11 +368,13 @@ async function handleCompleteScan(barcodeValue) {
       return;
     }
 
-    // Mark as completed
-    await db.collection('posts').doc(post.id).update({
+    // Mark as completed and clear underReview if set
+    const updateData = {
       status: 'completed',
       completedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (post.underReview) updateData.underReview = false;
+    await db.collection('posts').doc(post.id).update(updateData);
 
     Utils.showToast('پۆست تەواوبوو ✓', 'success');
     openCompletePhotoModal(post.id);
