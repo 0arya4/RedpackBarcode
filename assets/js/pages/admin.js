@@ -64,6 +64,10 @@ function setupSubTabs() {
     currentSearchQuery = e.target.value.trim().toLowerCase();
     renderAllSections(allPostsCache);
   });
+
+  document.getElementById('filter-reported').addEventListener('change', () => {
+    renderAllSections(allPostsCache);
+  });
 }
 
 function switchSubTab(name) {
@@ -347,6 +351,12 @@ function renderAllSections(posts) {
     if (status === 'with_driver') {
       filtered.sort((a, b) => (b.underReview ? 1 : 0) - (a.underReview ? 1 : 0));
     }
+    // Filter/sort completed list
+    if (status === 'completed') {
+      const onlyReported = document.getElementById('filter-reported')?.checked;
+      if (onlyReported) filtered = filtered.filter(p => p.reported);
+      filtered.sort((a, b) => (a.reported ? 1 : 0) - (b.reported ? 1 : 0));
+    }
     counts[status] = filtered.length;
     renderPostList(`list-${status}`, filtered, true);
   });
@@ -395,6 +405,12 @@ function renderPostList(containerId, posts, showActions) {
     el.querySelectorAll('.btn-check-post').forEach(btn => {
       btn.addEventListener('click', () => checkPost(btn.dataset.id, btn.dataset.checked === 'true'));
     });
+    el.querySelectorAll('.btn-complete-post').forEach(btn => {
+      btn.addEventListener('click', () => adminCompletePost(btn.dataset.id));
+    });
+    el.querySelectorAll('.btn-report-post').forEach(btn => {
+      btn.addEventListener('click', () => reportPost(btn.dataset.id, btn.dataset.reported === 'true'));
+    });
   }
 }
 
@@ -417,12 +433,14 @@ function renderPostCard(post, showActions) {
     <div class="post-card-footer">
       <button class="btn btn-outline btn-sm btn-edit-post" data-id="${post.id}" onclick="event.stopPropagation()">✏️ دەستکاری</button>
       ${checkBtn}
+      ${post.status === 'with_driver' ? `<button class="btn btn-success btn-sm btn-complete-post" data-id="${post.id}" onclick="event.stopPropagation()">✅ تەواوبوون</button>` : ''}
       <button class="btn btn-danger btn-sm btn-delete-post" data-id="${post.id}" onclick="event.stopPropagation()">🗑️ سڕینەوە</button>
     </div>` : '';
 
   const bgColor = driverColor(post.driverId);
+  const reportedStyle = post.reported ? 'opacity:0.5;filter:grayscale(0.6);' : '';
   return `
-    <div class="post-card status-${post.status}${post.underReview ? ' under-review' : ''}" style="background:${bgColor};" onclick="this.classList.toggle('expanded')">
+    <div class="post-card status-${post.status}${post.underReview ? ' under-review' : ''}" style="background:${bgColor};${reportedStyle}" onclick="this.classList.toggle('expanded')">
       <div class="post-card-summary">
         <div class="post-summary-main">
           <div class="post-summary-barcode" data-barcode="${Utils.escapeHtml(post.barcode)}">#${Utils.escapeHtml(post.barcode)}</div>
@@ -430,6 +448,7 @@ function renderPostCard(post, showActions) {
           ${post.underReview ? `<div style="color:#C62828;font-weight:700;font-size:0.78rem;margin-top:2px;">⚠️ ئەم پۆستە لەژێر بەدواداچووندایە</div>` : ''}
         </div>
         ${statusBadge}
+        ${(post.status === 'completed' && showActions) ? `<button class="btn btn-sm btn-report-post" data-id="${post.id}" data-reported="${!!post.reported}" onclick="event.stopPropagation()" style="background:${post.reported ? '#9E9E9E' : '#FF6F00'};color:#fff;border:none;padding:4px 8px;font-size:0.72rem;border-radius:6px;">📋 ${post.reported ? 'تەبلیغدرا ✓' : 'تەبلیغدرا'}</button>` : ''}
         <span class="post-chevron">▼</span>
       </div>
       <div class="post-card-details">
@@ -495,9 +514,9 @@ async function cleanupOldCompleted(posts) {
   posts.forEach(p => {
     const t = ts => ts?.toDate ? ts.toDate() : ts ? new Date(ts) : null;
 
-    // Auto-delete completed posts older than 24h
+    // Auto-delete reported completed posts older than 24h
     const completedAt = t(p.completedAt);
-    if (p.status === 'completed' && completedAt && completedAt < cutoff) {
+    if (p.status === 'completed' && p.reported && completedAt && completedAt < cutoff) {
       batch.delete(db.collection('posts').doc(p.id));
       changes++;
     }
@@ -511,6 +530,8 @@ async function cleanupOldCompleted(posts) {
 async function deleteAllCompleted() {
   let posts = allPostsCache.filter(p => p.status === 'completed');
   if (currentDriverFilter.length) posts = posts.filter(p => currentDriverFilter.includes(p.driverId));
+  const onlyReported = document.getElementById('filter-reported')?.checked;
+  if (onlyReported) posts = posts.filter(p => p.reported);
   if (!posts.length) return;
 
   const confirmed = await Utils.confirm(`دڵنیایت لە سڕینەوەی هەموو ${posts.length} پۆستە تەواوبووەکان؟`);
@@ -546,6 +567,34 @@ async function checkPost(postId, currentlyChecked) {
   try {
     await db.collection('posts').doc(postId).update({ underReview: !currentlyChecked });
     Utils.showToast(!currentlyChecked ? 'پۆست لەژێر بەدواداچووندایە ✓' : 'بەدواداچوون لابرا', 'success');
+  } catch (err) {
+    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
+  }
+  Utils.showLoading(false);
+}
+
+async function adminCompletePost(postId) {
+  const confirmed = await Utils.confirm('دڵنیایت لە تەواوکردنی ئەم پۆستە؟');
+  if (!confirmed) return;
+  Utils.showLoading(true);
+  try {
+    await db.collection('posts').doc(postId).update({
+      status: 'completed',
+      completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      underReview: false
+    });
+    Utils.showToast('پۆست تەواوبوو ✓', 'success');
+  } catch (err) {
+    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
+  }
+  Utils.showLoading(false);
+}
+
+async function reportPost(postId, currentlyReported) {
+  Utils.showLoading(true);
+  try {
+    await db.collection('posts').doc(postId).update({ reported: !currentlyReported });
+    Utils.showToast(!currentlyReported ? 'تەبلیغدرا ✓' : 'تەبلیغ لابرا', 'success');
   } catch (err) {
     Utils.showToast('هەڵەیەک ڕوویدا', 'error');
   }
