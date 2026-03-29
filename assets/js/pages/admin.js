@@ -763,35 +763,35 @@ async function loadStats() {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
+  const oldInput = document.getElementById('photo-input');
+  const newInput = oldInput.cloneNode(true);
+  oldInput.parentNode.replaceChild(newInput, oldInput);
+  newInput.addEventListener('change', photoChangeHandler);
+  newInput.click();
+}
+
+async function photoChangeHandler() {
   const input = document.getElementById('photo-input');
-  input.value = '';
-  input.click();
+  const file = input.files[0];
+  if (!file || !pendingPhotoPostId) return;
+
+  Utils.showLoading(true);
+  const postId = pendingPhotoPostId;
+  pendingPhotoPostId = null;
+
+  try {
+    const base64 = await compressToBase64(file);
+    await db.collection('posts').doc(postId).update({ photoAdmin: base64 });
+    Utils.showToast('وێنە دانرا ✓', 'success');
+  } catch (err) {
+    Utils.showToast('هەڵە: ' + err.message, 'error');
+  } finally {
+    Utils.showLoading(false);
+  }
 }
 
 function setupPhotoCapture() {
-  const input = document.getElementById('photo-input');
-
-  input.addEventListener('change', async () => {
-    const file = input.files[0];
-    if (!file || !pendingPhotoPostId) return;
-
-    Utils.closeModal('modal-photo-capture');
-    Utils.showLoading(true);
-
-    const postId = pendingPhotoPostId;
-    pendingPhotoPostId = null;
-
-    try {
-      const base64 = await compressToBase64(file);
-      await db.collection('posts').doc(postId).update({ photoAdmin: base64 });
-      Utils.showToast('وێنە دانرا ✓', 'success');
-    } catch (err) {
-      Utils.showToast('هەڵە: ' + err.message, 'error');
-    } finally {
-      Utils.showLoading(false);
-    }
-  });
-
+  document.getElementById('photo-input').addEventListener('change', photoChangeHandler);
 }
 
 function compressToBase64(file, maxWidth = 600, quality = 0.5) {
