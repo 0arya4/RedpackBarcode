@@ -763,11 +763,8 @@ async function loadStats() {
 // ── Photo Capture ────────────────────────────────────────────
 function openPhotoCaptureModal(postId) {
   pendingPhotoPostId = postId;
-  const oldInput = document.getElementById('photo-input');
-  const newInput = oldInput.cloneNode(true);
-  oldInput.parentNode.replaceChild(newInput, oldInput);
-  newInput.addEventListener('change', photoChangeHandler);
-  newInput.click();
+  document.getElementById('photo-input').value = '';
+  document.getElementById('photo-overlay').style.display = 'flex';
 }
 
 async function photoChangeHandler() {
@@ -775,6 +772,7 @@ async function photoChangeHandler() {
   const file = input.files[0];
   if (!file || !pendingPhotoPostId) return;
 
+  document.getElementById('photo-overlay').style.display = 'none';
   Utils.showLoading(true);
   const postId = pendingPhotoPostId;
   pendingPhotoPostId = null;

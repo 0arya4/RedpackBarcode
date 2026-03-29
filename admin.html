@@ -339,8 +339,14 @@
     </div>
   </div>
 
-  <!-- Hidden photo input — triggered directly after scan -->
-  <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
+  <!-- Photo Overlay -->
+  <div id="photo-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+    <div style="color:#fff;font-size:1.1rem;font-weight:700;">📸 وێنەی پۆستەکە بگرە</div>
+    <label style="background:var(--primary);color:#fff;padding:14px 36px;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;">
+      📷 وێنە بگرە
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" />
+    </label>
+  </div>
 
   <!-- Loading Overlay -->
   <div id="loading-overlay">
