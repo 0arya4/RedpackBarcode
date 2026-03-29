@@ -464,6 +464,11 @@ function renderPostCard(post, showActions) {
             <span class="label"> کاتی باڕکۆدی سایەق:</span>
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
           </div>` : ''}
+          ${post.completedAt ? `
+          <div class="post-row">
+            <span class="label">کاتی تەواوبوون:</span>
+            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.completedAt)}</span>
+          </div>` : ''}
         </div>
         ${post.directDriverScan ? `<div class="post-photo" style="background:var(--warning-bg,#FFF8E1);border:1px solid #FFD54F;border-radius:8px;padding:10px;font-size:0.8rem;color:#E65100;text-align:center;">⚠️ لە ئۆفیس باڕکۆد نەکراوە<br>یەکسەر سایەق باڕکۆدی کردووە</div>` : post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}

@@ -10,7 +10,7 @@ const Utils = {
     if (!timestamp) return '—';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     const d = date.toLocaleDateString('en-GB'); // DD/MM/YYYY
-    const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const t = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     return `${d} ${t}`;
   },
 

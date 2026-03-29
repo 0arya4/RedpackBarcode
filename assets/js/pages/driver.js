@@ -415,52 +415,7 @@ function setupCompletePhotoCapture() {
   });
 }
 
-// ── Complete all posts ───────────────────────────────────────
-async function completeAllPosts() {
-  let posts = driverPostsCache.withme.filter(p => !p.underReview);
-  if (supervisorDriverFilter.length) posts = posts.filter(p => supervisorDriverFilter.includes(p.driverId));
-  if (!posts.length) return;
 
-  const confirmed = await Utils.confirm(`دڵنیایت لە تەواوکردنی هەموو ${posts.length} پۆستەکان؟`);
-  if (!confirmed) return;
-
-  Utils.showLoading(true);
-  try {
-    const batch = db.batch();
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    posts.forEach(p => {
-      batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
-    });
-    await batch.commit();
-    Utils.showToast(`${posts.length} پۆستەکان تەواوبوون ✓`, 'success');
-  } catch (err) {
-    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
-  }
-  Utils.showLoading(false);
-}
-
-// ── Complete a post ──────────────────────────────────────────
-async function completePost(postId) {
-  const post = driverPostsCache.withme.find(p => p.id === postId);
-  if (post?.underReview) {
-    Utils.showToast('ئەم پۆستە لەژێر بەدواداچووندایە', 'error');
-    return;
-  }
-  const confirmed = await Utils.confirm('دڵنیایت لە تەواوکردنی ئەم پۆستە؟');
-  if (!confirmed) return;
-
-  Utils.showLoading(true);
-  try {
-    await db.collection('posts').doc(postId).update({
-      status: 'completed',
-      completedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    Utils.showToast('پۆست تەواوبوو ✓', 'success');
-  } catch (err) {
-    Utils.showToast('هەڵەیەک ڕوویدا', 'error');
-  }
-  Utils.showLoading(false);
-}
 
 // ── Real-time Listeners ──────────────────────────────────────
 function startRealtimeListeners() {
@@ -509,8 +464,6 @@ function processDriverPosts(posts) {
     // Badges always reflect total counts (unfiltered)
     updateBadge('badge-uncollected', uncollected.length);
     updateBadge('badge-withme', withMe.length);
-    const completeAllBtn = document.getElementById('complete-all-btn');
-    if (completeAllBtn) completeAllBtn.style.display = withMe.filter(p => !p.underReview).length > 1 ? 'block' : 'none';
 
     // Render with active supervisor filter if set
     const applyFilter = list => (isSupervisorMode && supervisorDriverFilter.length)
@@ -556,21 +509,10 @@ function renderDriverList(containerId, posts, section) {
 
   el.innerHTML = posts.map(post => renderDriverPostCard(post, section)).join('');
 
-  // Attach complete button listeners
-  if (section === 'withme') {
-    el.querySelectorAll('.btn-complete-post').forEach(btn => {
-      btn.addEventListener('click', () => completePost(btn.dataset.id));
-    });
-  }
 }
 
 function renderDriverPostCard(post, section) {
-  const completeBtn = section === 'withme' ? `
-    <div class="post-card-footer">
-      <button class="btn btn-success btn-full btn-complete-post" data-id="${post.id}" onclick="event.stopPropagation()">
-        ✅ تەواوکردن
-      </button>
-    </div>` : '';
+  const completeBtn = '';
 
   const driverTag = isSupervisorMode
     ? `<span style="font-size:0.72rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:10px;margin-right:4px;">${Utils.escapeHtml(post.driverName)}</span>`
@@ -614,6 +556,11 @@ function renderDriverPostCard(post, section) {
           <div class="post-row">
             <span class="label">باڕکۆد سایەق:</span>
             <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.driverScannedAt)}</span>
+          </div>` : ''}
+          ${post.completedAt ? `
+          <div class="post-row">
+            <span class="label">کاتی تەواوبوون:</span>
+            <span class="value" style="font-size:0.78rem;color:var(--text-muted);">${Utils.formatDate(post.completedAt)}</span>
           </div>` : ''}
         </div>
         ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی بەریدەکە</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
