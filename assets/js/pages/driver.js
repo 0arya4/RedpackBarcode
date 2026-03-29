@@ -520,26 +520,6 @@ function processDriverPosts(posts) {
     renderDriverList('list-uncollected', applyFilter(uncollected), 'uncollected');
     renderDriverList('list-withme', applyFilter(withMe), 'withme');
     renderDriverList('list-completed', applyFilter(completed), 'completed');
-
-    autoCompleteOldPosts(withMe);
-}
-
-async function autoCompleteOldPosts(withMePosts) {
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const old = withMePosts.filter(p => {
-    if (p.underReview) return false;
-    const t = p.driverScannedAt?.toDate ? p.driverScannedAt.toDate() : p.driverScannedAt ? new Date(p.driverScannedAt) : null;
-    return t && t < cutoff;
-  });
-  if (!old.length) return;
-  try {
-    const batch = db.batch();
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    old.forEach(p => batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now }));
-    await batch.commit();
-  } catch (e) {
-    console.error('autoCompleteOldPosts failed:', e);
-  }
 }
 
 function updateBadge(badgeId, count) {

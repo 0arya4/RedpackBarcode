@@ -484,19 +484,11 @@ async function editPost(postId) {
 
 async function cleanupOldCompleted(posts) {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const now = firebase.firestore.FieldValue.serverTimestamp();
   const batch = db.batch();
   let changes = 0;
 
   posts.forEach(p => {
     const t = ts => ts?.toDate ? ts.toDate() : ts ? new Date(ts) : null;
-
-    // Auto-complete posts with_driver for over 24h (skip underReview posts)
-    const scannedAt = t(p.driverScannedAt);
-    if (p.status === 'with_driver' && !p.underReview && scannedAt && scannedAt < cutoff) {
-      batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
-      changes++;
-    }
 
     // Auto-delete completed posts older than 24h
     const completedAt = t(p.completedAt);
