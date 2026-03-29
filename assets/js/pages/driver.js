@@ -6,6 +6,7 @@ let currentDriverUser = null;
 let currentTab = 'uncollected';
 let driverPostsCache = { uncollected: [], withme: [], completed: [] };
 let pendingPhotoPostId = null;
+let pendingCompletePhotoPostId = null;
 let isSupervisorMode = false;
 let supervisorDriverIds = [];
 let supervisorDriverFilter = []; // selected driverIds for supervisor filter (empty = all)
@@ -32,7 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupNavigation();
     setupScanner();
+    setupCompleteScanner();
     setupPhotoCapture();
+    setupCompletePhotoCapture();
     setupSearch();
     if (isSupervisorMode) setupSupervisorFilter();
     startRealtimeListeners();
@@ -57,12 +60,15 @@ function switchTab(tabName) {
   document.querySelector(`.nav-item[data-tab="${tabName}"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
-  // Hide FAB + mini button on completed tab
+  // Show pickup FAB only on uncollected, complete FAB only on withme
   const fab = document.getElementById('driver-scan-fab');
   const mini = document.getElementById('driver-manual-btn');
-  const show = tabName === 'uncollected' ? 'flex' : 'none';
-  fab.style.display = show;
-  mini.style.display = show;
+  const completeFab = document.getElementById('complete-scan-fab');
+  const completeMini = document.getElementById('complete-manual-btn');
+  fab.style.display = tabName === 'uncollected' ? 'flex' : 'none';
+  mini.style.display = tabName === 'uncollected' ? 'flex' : 'none';
+  completeFab.style.display = tabName === 'withme' ? 'flex' : 'none';
+  completeMini.style.display = tabName === 'withme' ? 'flex' : 'none';
 
   if (isSupervisorMode) renderAllFromCache();
 }
@@ -308,6 +314,107 @@ function compressToBase64(file, maxWidth = 600, quality = 0.5) {
   });
 }
 
+// ── Complete Barcode Scanner ─────────────────────────────────
+function setupCompleteScanner() {
+  document.getElementById('complete-scan-fab').addEventListener('click', openCompleteScanner);
+  document.getElementById('complete-scanner-close').addEventListener('click', closeCompleteScanner);
+  document.getElementById('complete-manual-btn').addEventListener('click', () => {
+    document.getElementById('complete-manual-input').value = '';
+    document.getElementById('complete-manual-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('complete-manual-input').focus(), 100);
+  });
+  document.getElementById('complete-manual-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitCompleteManual();
+  });
+}
+
+async function submitCompleteManual() {
+  const val = document.getElementById('complete-manual-input').value.trim();
+  if (!val) return;
+  document.getElementById('complete-manual-overlay').style.display = 'none';
+  await handleCompleteScan(val);
+}
+
+async function openCompleteScanner() {
+  Utils.openModal('modal-complete-scanner');
+  try {
+    await BarcodeScanner.start('complete-scanner-view', handleCompleteScan);
+  } catch (e) {
+    Utils.closeModal('modal-complete-scanner');
+  }
+}
+
+async function closeCompleteScanner() {
+  await BarcodeScanner.stop();
+  Utils.closeModal('modal-complete-scanner');
+}
+
+async function handleCompleteScan(barcodeValue) {
+  await BarcodeScanner.stop();
+  Utils.closeModal('modal-complete-scanner');
+  Utils.showLoading(true);
+
+  try {
+    const post = driverPostsCache.withme.find(p => p.barcode === barcodeValue);
+
+    if (!post) {
+      // Check if it's already completed
+      const completedPost = driverPostsCache.completed.find(p => p.barcode === barcodeValue);
+      if (completedPost) {
+        Utils.showToast('ئەم پۆستە باڕکۆد کراوە — تەواوبووە', 'error');
+      } else {
+        Utils.showToast('پۆستەکە هەڵنەگیراوە', 'error');
+      }
+      return;
+    }
+
+    // Mark as completed
+    await db.collection('posts').doc(post.id).update({
+      status: 'completed',
+      completedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    Utils.showToast('پۆست تەواوبوو ✓', 'success');
+    openCompletePhotoModal(post.id);
+  } catch (err) {
+    console.error(err);
+    Utils.showToast('هەڵەیەک ڕوویدا: ' + err.message, 'error');
+  } finally {
+    Utils.showLoading(false);
+  }
+}
+
+// ── Complete Photo Capture ───────────────────────────────────
+function openCompletePhotoModal(postId) {
+  pendingCompletePhotoPostId = postId;
+  document.getElementById('complete-photo-input').value = '';
+  document.getElementById('complete-photo-overlay').style.display = 'flex';
+}
+
+function setupCompletePhotoCapture() {
+  document.getElementById('complete-photo-input').addEventListener('change', async () => {
+    const input = document.getElementById('complete-photo-input');
+    const file = input.files[0];
+    if (!file || !pendingCompletePhotoPostId) return;
+
+    document.getElementById('complete-photo-overlay').style.display = 'none';
+    Utils.showLoading(true);
+
+    const postId = pendingCompletePhotoPostId;
+    pendingCompletePhotoPostId = null;
+
+    try {
+      const base64 = await compressToBase64(file);
+      await db.collection('posts').doc(postId).update({ photoComplete: base64 });
+      Utils.showBanner('✅ تەواوبوو و وێنە گیرا');
+    } catch (err) {
+      Utils.showToast('هەڵە: ' + err.message, 'error');
+    } finally {
+      Utils.showLoading(false);
+    }
+  });
+}
+
 // ── Complete all posts ───────────────────────────────────────
 async function completeAllPosts() {
   let posts = driverPostsCache.withme.filter(p => !p.underReview);
@@ -531,6 +638,7 @@ function renderDriverPostCard(post, section) {
         </div>
         ${post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 وێنەی بەریدەکە</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 وێنەی لای سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.photoComplete ? `<div class="post-photo"><div class="photo-label">✅ باڕکۆدی تەواوبوون</div><img src="${post.photoComplete}" alt="وێنەی تەواوبوون" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${completeBtn}
       </div>
     </div>`;

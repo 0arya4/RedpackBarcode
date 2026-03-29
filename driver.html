@@ -81,6 +81,12 @@
     </button>
     <button class="fab-mini" id="driver-manual-btn" title="ئایدی بنووسە">✏️</button>
 
+    <!-- Complete Scan Button (only on withme tab) -->
+    <button class="fab" id="complete-scan-fab" style="display:none;background:#2E7D32;">
+      ✅&nbsp;&nbsp;باڕکۆدی تەواوبوون
+    </button>
+    <button class="fab-mini" id="complete-manual-btn" style="display:none;" title="ئایدی تەواوبوون">✏️</button>
+
     <!-- Manual Barcode Overlay -->
     <div id="driver-manual-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
       <div style="background:var(--surface);border-radius:16px;padding:24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:14px;">
@@ -127,6 +133,46 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ══════════════════════════ MODAL: COMPLETE SCANNER ══════════════════════════ -->
+  <div class="modal" id="modal-complete-scanner">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <span class="modal-title">✅ باڕکۆدی تەواوبوون</span>
+        <button class="modal-close" id="complete-scanner-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;text-align:center;">
+          باڕکۆدی ستیکەر بکە بۆ تەواوکردنی پۆست
+        </p>
+        <div class="scanner-container">
+          <div id="complete-scanner-view"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Manual Barcode Overlay -->
+  <div id="complete-manual-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border-radius:16px;padding:24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:1rem;font-weight:700;color:var(--text);text-align:center;">✅ ئایدی تەواوبوون بنووسە</div>
+      <input type="number" id="complete-manual-input" class="form-input" placeholder="بۆ نموونە: 174483" dir="ltr" style="font-size:1.1rem;text-align:center;" />
+      <button onclick="submitCompleteManual()" style="padding:12px;background:#2E7D32;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">پشتڕاستکردنەوە ✓</button>
+      <button onclick="document.getElementById('complete-manual-overlay').style.display='none'" style="padding:10px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;font-size:0.9rem;cursor:pointer;">داخستن</button>
+    </div>
+  </div>
+
+  <!-- Complete Photo Overlay -->
+  <div id="complete-photo-overlay"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:24px;">
+    <div style="color:#fff; font-size:1.1rem; font-weight:700; text-align:center;">✅ باڕکۆدی تەواوبوون<br><span
+        style="font-size:0.85rem; font-weight:400; opacity:0.7;">وێنەی پاکەتەکە بگرە</span></div>
+    <label for="complete-photo-input"
+      style="background:#2E7D32; color:#fff; padding:20px 48px; border-radius:16px; font-size:1.2rem; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(46,125,50,0.5);">
+      📷 وێنە بگرە
+    </label>
+    <input type="file" id="complete-photo-input" accept="image/*" capture="environment" style="display:none" />
   </div>
 
   <!-- Photo Capture Overlay — appears instantly after scan -->

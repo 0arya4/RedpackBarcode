@@ -467,6 +467,7 @@ function renderPostCard(post, showActions) {
         </div>
         ${post.directDriverScan ? `<div class="post-photo" style="background:var(--warning-bg,#FFF8E1);border:1px solid #FFD54F;border-radius:8px;padding:10px;font-size:0.8rem;color:#E65100;text-align:center;">⚠️ لە ئۆفیس باڕکۆد نەکراوە<br>یەکسەر سایەق باڕکۆدی کردووە</div>` : post.photoAdmin ? `<div class="post-photo"><div class="photo-label">📦 ئەدمین</div><img src="${post.photoAdmin}" alt="وێنەی ئەدمین" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${post.photoDriver ? `<div class="post-photo"><div class="photo-label">🚗 سایەق</div><img src="${post.photoDriver}" alt="وێنەی سایەق" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
+        ${post.photoComplete ? `<div class="post-photo"><div class="photo-label">✅ باڕکۆدی تەواوبوون</div><img src="${post.photoComplete}" alt="وێنەی تەواوبوون" onclick="event.stopPropagation();Utils.openPhoto(this.src)"></div>` : ''}
         ${actions}
       </div>
     </div>`;
