@@ -74,9 +74,11 @@ function setupSearch() {
     if (!input) return;
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
-      const filtered = driverPostsCache[section].filter(p =>
-        p.barcode?.toLowerCase().includes(q)
-      );
+      let filtered = driverPostsCache[section];
+      if (isSupervisorMode && supervisorDriverFilter.length) {
+        filtered = filtered.filter(p => supervisorDriverFilter.includes(p.driverId));
+      }
+      if (q) filtered = filtered.filter(p => p.barcode?.toLowerCase().includes(q));
       renderDriverList(`list-${section}`, filtered, section);
     });
   });
@@ -205,6 +207,7 @@ async function handleDriverScan(barcodeValue) {
         createdAt:        firebase.firestore.FieldValue.serverTimestamp(),
         createdBy:        'driver'
       });
+      Utils.showToast('پۆست دروستکرا ✓ — لای من', 'success');
       switchTab('withme');
       openPhotoCaptureModal(newRef.id);
       return;
@@ -357,17 +360,25 @@ function startRealtimeListeners() {
   const myId = currentDriverUser.uid;
   const allIds = [myId, ...supervisorDriverIds];
 
-  // Build query — use 'in' for supervisor, '==' for regular driver
-  let query = db.collection('posts');
-  if (allIds.length === 1) {
-    query = query.where('driverId', '==', myId);
-  } else {
-    query = query.where('driverId', 'in', allIds);
-  }
+  // Firestore 'in' supports max 10 values — chunk if needed
+  const chunks = [];
+  for (let i = 0; i < allIds.length; i += 10) chunks.push(allIds.slice(i, i + 10));
 
-  query.onSnapshot(snapshot => {
-    const posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  const chunkResults = new Array(chunks.length).fill(null).map(() => []);
 
+  chunks.forEach((chunk, idx) => {
+    const q = chunk.length === 1
+      ? db.collection('posts').where('driverId', '==', chunk[0])
+      : db.collection('posts').where('driverId', 'in', chunk);
+
+    q.onSnapshot(snapshot => {
+      chunkResults[idx] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      processDriverPosts(chunkResults.flat());
+    });
+  });
+}
+
+function processDriverPosts(posts) {
     const uncollected = posts
       .filter(p => p.status === 'ready')
       .sort((a, b) => (b.adminScannedAt?.toMillis?.() || 0) - (a.adminScannedAt?.toMillis?.() || 0));
@@ -392,19 +403,18 @@ function startRealtimeListeners() {
     updateBadge('badge-uncollected', uncollected.length);
     updateBadge('badge-withme', withMe.length);
     const completeAllBtn = document.getElementById('complete-all-btn');
-    if (completeAllBtn) completeAllBtn.style.display = withMe.length > 1 ? 'block' : 'none';
+    if (completeAllBtn) completeAllBtn.style.display = withMe.filter(p => !p.underReview).length > 1 ? 'block' : 'none';
 
     // Render with active supervisor filter if set
-    const applyFilter = posts => (isSupervisorMode && supervisorDriverFilter.length)
-      ? posts.filter(p => supervisorDriverFilter.includes(p.driverId))
-      : posts;
+    const applyFilter = list => (isSupervisorMode && supervisorDriverFilter.length)
+      ? list.filter(p => supervisorDriverFilter.includes(p.driverId))
+      : list;
 
     renderDriverList('list-uncollected', applyFilter(uncollected), 'uncollected');
     renderDriverList('list-withme', applyFilter(withMe), 'withme');
     renderDriverList('list-completed', applyFilter(completed), 'completed');
 
     autoCompleteOldPosts(withMe);
-  });
 }
 
 async function autoCompleteOldPosts(withMePosts) {
@@ -415,10 +425,14 @@ async function autoCompleteOldPosts(withMePosts) {
     return t && t < cutoff;
   });
   if (!old.length) return;
-  const batch = db.batch();
-  const now = firebase.firestore.FieldValue.serverTimestamp();
-  old.forEach(p => batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now }));
-  await batch.commit();
+  try {
+    const batch = db.batch();
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+    old.forEach(p => batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now }));
+    await batch.commit();
+  } catch (e) {
+    console.error('autoCompleteOldPosts failed:', e);
+  }
 }
 
 function updateBadge(badgeId, count) {
@@ -481,7 +495,7 @@ function renderDriverPostCard(post, section) {
         <div class="post-summary-main">
           <div class="post-summary-barcode" data-barcode="${Utils.escapeHtml(post.barcode)}">${driverTag}#${Utils.escapeHtml(post.barcode)}</div>
           <div class="post-summary-sub">${Utils.escapeHtml(post.clientName)} · ${Utils.escapeHtml(post.address)}</div>
-          ${post.underReview ? `<div style="color:#C62828;font-weight:700;font-size:0.78rem;margin-top:2px;">⚠️ ئەم پۆستە لەژێر چێک کردنەوەدایە</div>` : ''}
+          ${post.underReview ? `<div style="color:#C62828;font-weight:700;font-size:0.78rem;margin-top:2px;">⚠️ ئەم پۆستە لەژێر بەدواداچووندایە</div>` : ''}
         </div>
         <span class="badge ${Utils.statusClass(post.status)}">${Utils.statusLabel(post.status)}</span>
         <span class="post-chevron">▼</span>

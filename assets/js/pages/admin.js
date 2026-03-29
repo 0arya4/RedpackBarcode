@@ -140,8 +140,47 @@ async function handleAdminScan(barcodeValue) {
   let prefill = await RedPackAPI.getOrderByBarcode(barcodeValue);
   Utils.showLoading(false);
 
-  // Open post form with prefilled data (or empty)
-  openPostForm(barcodeValue, prefill);
+  if (prefill) {
+    // Match driver by name
+    const matchedDriver = allDrivers.find(d => d.active && d.name.trim() === prefill.driverName.trim());
+    if (!matchedDriver) {
+      Utils.showToast(`سایەق "${prefill.driverName}" لە سیستەمدا نەدۆزرایەوە`, 'error');
+      openPostForm(barcodeValue, prefill);
+      return;
+    }
+
+    // Auto-create post without showing form
+    try {
+      Utils.showLoading(true);
+      const newRef = await db.collection('posts').add({
+        barcode: barcodeValue,
+        driverId: matchedDriver.uid,
+        driverName: matchedDriver.name,
+        receiverPhone: prefill.receiverPhone || '',
+        price: prefill.price ?? 0,
+        quantity: prefill.quantity ?? 1,
+        clientName: prefill.clientName || '',
+        clientPhone: prefill.clientPhone || '',
+        address: prefill.address || '',
+        note: prefill.note || '',
+        status: 'ready',
+        adminScannedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        driverScannedAt: null,
+        completedAt: null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: currentAdminUser.uid
+      });
+      Utils.showLoading(false);
+      Utils.showToast(`پۆست دروستکرا ✓ — ${matchedDriver.name}`, 'success');
+      openPhotoCaptureModal(newRef.id);
+    } catch (err) {
+      Utils.showLoading(false);
+      Utils.showToast('هەڵەیەک ڕوویدا: ' + err.message, 'error');
+    }
+  } else {
+    // No API data — show form manually
+    openPostForm(barcodeValue, null);
+  }
 }
 
 // ── Post Form ────────────────────────────────────────────────
@@ -176,8 +215,8 @@ function openPostForm(barcode, prefill = null, existingPost = null) {
 
   // Fill fields
   document.getElementById('pf-receiver-phone').value = existingPost?.receiverPhone || prefill?.receiverPhone || '';
-  document.getElementById('pf-price').value = existingPost?.price || prefill?.price || '';
-  document.getElementById('pf-quantity').value = existingPost?.quantity || prefill?.quantity || 1;
+  document.getElementById('pf-price').value = existingPost?.price ?? prefill?.price ?? '';
+  document.getElementById('pf-quantity').value = existingPost?.quantity ?? prefill?.quantity ?? 1;
   document.getElementById('pf-client-name').value = existingPost?.clientName || prefill?.clientName || '';
   document.getElementById('pf-client-phone').value = existingPost?.clientPhone || prefill?.clientPhone || '';
   document.getElementById('pf-address').value = existingPost?.address || prefill?.address || '';
@@ -452,19 +491,23 @@ async function cleanupOldCompleted(posts) {
     const t = ts => ts?.toDate ? ts.toDate() : ts ? new Date(ts) : null;
 
     // Auto-complete posts with_driver for over 24h (skip underReview posts)
-    if (p.status === 'with_driver' && !p.underReview && t(p.driverScannedAt) < cutoff) {
+    const scannedAt = t(p.driverScannedAt);
+    if (p.status === 'with_driver' && !p.underReview && scannedAt && scannedAt < cutoff) {
       batch.update(db.collection('posts').doc(p.id), { status: 'completed', completedAt: now });
       changes++;
     }
 
     // Auto-delete completed posts older than 24h
-    if (p.status === 'completed' && t(p.completedAt) < cutoff) {
+    const completedAt = t(p.completedAt);
+    if (p.status === 'completed' && completedAt && completedAt < cutoff) {
       batch.delete(db.collection('posts').doc(p.id));
       changes++;
     }
   });
 
-  if (changes) await batch.commit();
+  if (changes) {
+    try { await batch.commit(); } catch (e) { console.error('cleanupOldCompleted failed:', e); }
+  }
 }
 
 async function deleteAllCompleted() {
@@ -509,13 +552,6 @@ async function checkPost(postId, currentlyChecked) {
     Utils.showToast('هەڵەیەک ڕوویدا', 'error');
   }
   Utils.showLoading(false);
-}
-
-function renderFilteredPosts() {
-  db.collection('posts').orderBy('createdAt', 'desc').get().then(snapshot => {
-    const posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderAllSections(posts);
-  });
 }
 
 // ── Driver Management ────────────────────────────────────────

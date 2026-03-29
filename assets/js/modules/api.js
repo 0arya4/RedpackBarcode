@@ -5,8 +5,8 @@
 
 const RedPackAPI = {
 
-  BASE_URL: 'https://api.rpiraq.com',  // Update when API details are provided
-  API_KEY: '',                          // Add your API key here
+  BASE_URL: 'https://api.rpiraq.com/api',
+  API_KEY: 't9g8cynsjyy4bgn2ndu65iw0',
 
   // Fetch order details by barcode number
   async getOrderByBarcode(barcodeId) {
@@ -16,11 +16,12 @@ const RedPackAPI = {
     }
 
     try {
-      const response = await fetch(`${this.BASE_URL}/orders/${barcodeId}`, {
+      const response = await fetch(`${this.BASE_URL}/scan?barcode=${encodeURIComponent(barcodeId)}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.API_KEY}`,
-          'Content-Type': 'application/json'
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'api-access-key': this.API_KEY
         }
       });
 
@@ -29,21 +30,20 @@ const RedPackAPI = {
         return null;
       }
 
-      const data = await response.json();
+      const result = await response.json();
+      if (!result.status || !result.data?.order) return null;
 
-      // Normalize API response to our internal format
-      // Update these field mappings once you have the actual API response structure
+      const order = result.data.order;
       return {
-        barcode: data.id || barcodeId,
-        driverName: data.driver_name || data.driverName || '',
-        receiverPhone: data.receiver_phone || data.receiverPhone || '',
-        price: data.price || 0,
-        quantity: data.quantity || 1,
-        clientName: data.client_name || data.clientName || '',
-        clientPhone: data.client_phone || data.clientPhone || '',
-        address: data.address || '',
-        note: data.note || '',
-        date: data.date || ''
+        barcode: String(order.id || barcodeId),
+        driverName: order.driver?.name?.trim() || '',
+        receiverPhone: order.receiver?.phone || '',
+        price: order.price ?? 0,
+        quantity: order.quantity ?? 1,
+        clientName: order.client?.name || '',
+        clientPhone: order.client?.user_phone || '',
+        address: [order.info?.address?.name, order.info?.additional_location].filter(Boolean).join(' — '),
+        note: order.info?.note || '',
       };
     } catch (err) {
       console.error('[RedPackAPI] Request failed:', err);
